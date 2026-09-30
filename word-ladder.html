@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f4f5f9">
+<title>Word Ladder</title>
+<style>
+:root{
+  --bg:#f4f5f9; --card:#fff; --ink:#1f2333; --muted:#7a8090; --line:#e3e6ee;
+  --dark:#2b2f3d; --tile:#eef0f6; --gold:#e5cf7a; --accent:#4f6bff;
+  --ok:#2ebd6b; --bad:#e5484d; --warn:#e9a23b; --lock:#dfe2ea;
+  --n:4; --tile-size:64px; --gap:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{outline:none;
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  display:flex; flex-direction:column; overflow:hidden; user-select:none; -webkit-user-select:none;
+  touch-action:manipulation;
+}
+header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;
+}
+header h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.14em;color:var(--ink)}
+header .level{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;margin-top:2px}
+header .hbtns{display:flex;gap:6px;flex-shrink:0}
+header h1{white-space:nowrap}
+@media (max-width:430px){ header .lb{display:none} #hintBtn,#restartBtn,#dailyBtn{padding:10px 12px;font-size:15px} }
+body.done #restartBtn{display:none}
+#hintBtn,#restartBtn,#dailyBtn,#helpBtn,#menuBtn{
+  border:0;border-radius:999px;padding:10px 12px;white-space:nowrap;font-weight:800;font-size:13px;letter-spacing:.04em;
+  background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);
+  display:flex;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,opacity .2s;
+}
+#hintBtn:active,#restartBtn:active,#dailyBtn:active{transform:scale(.96)}
+#dailyBtn.on{background:var(--dark);color:#fff}
+/* a wrong word is on the board: RESTART lights up so the player knows a fresh start is one tap away */
+#restartBtn.alert{background:var(--accent);color:#fff;box-shadow:0 0 0 0 rgba(79,107,255,.45);animation:ring 1.4s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(79,107,255,.45)}70%{box-shadow:0 0 0 10px rgba(79,107,255,0)}100%{box-shadow:0 0 0 0 rgba(79,107,255,0)}}
+#hintBtn:disabled,#restartBtn:disabled{opacity:.4;cursor:default}
+.modes{display:none;justify-content:center;margin:0 16px 8px}
+.modes .seg{display:flex;background:#e6e9f1;border-radius:999px;padding:3px}
+.modes button{border:0;background:transparent;border-radius:999px;padding:7px 16px;font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.modes button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(30,35,60,.12)}
+.steps{display:none;text-align:center;color:var(--muted);font-size:16px;font-weight:800;letter-spacing:.14em;margin:14px 0 0}
+.steps.show{display:block}
+.cell.slot.hit,.cell.slot.hit.revealed,.cell.slot.hit.changed{background:var(--ok);color:#fff!important;box-shadow:none}
+main{flex:1;overflow:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;padding:0 16px 230px}
+.sub{display:none; text-align:center;color:var(--muted);font-size:15px;margin:4px 0 6px}
+.fill{display:none; text-align:center;color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.16em;margin:0 0 18px}
+.board{display:flex;flex-direction:column;align-items:center;gap:18px}
+.ladder{display:flex;flex-direction:column;align-items:center;gap:var(--gap)}
+.best{display:none;max-width:100%;padding:10px 14px 10px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);text-align:center}
+.board.solved .best{display:block;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+.board.solved .best.wait{opacity:0;animation:none}   /* celebration order: letters hop → cheer text → rewards */
+body.beat .best{display:none!important}   /* over par: no BEST card, the footer challenge button carries the message */
+.best{padding:6px 10px}
+.best .bl{display:block;width:100%;border:0;background:transparent;font:inherit;font-size:16px;font-weight:800;letter-spacing:.14em;color:var(--ink);padding:8px 12px;cursor:pointer;white-space:nowrap}
+.best .bl .chev{display:inline-block;margin-left:6px;color:var(--muted);transition:transform .2s}
+.best.open .bl .chev{transform:rotate(180deg)}
+.best.static .bl{cursor:default;pointer-events:none}
+.best.static .bws{display:none!important}
+.best.perfect{background:transparent;box-shadow:none}
+.best.perfect .bl{color:var(--ink);font-size:20px} .best.perfect .bl .ic{font-size:22px;margin-right:8px;vertical-align:-2px}
+.best .sub2{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted);padding:0 0 8px;margin-top:-4px}
+.best .bws{display:none;padding:2px 6px 8px}
+.best.open .bws{display:flex}
+.best .bws{flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px}
+.best .bw{font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--ink);font-variant-numeric:tabular-nums}
+.best .bw.s{color:var(--muted)} .best .bw.t{color:var(--ok)}
+.best .bw span.c{color:var(--accent)}
+.best .ar{color:#b9bdca;font-size:12px}
+.row{display:grid;grid-template-columns:repeat(var(--n),var(--tile-size));gap:var(--gap);position:relative}
+.row .status{
+  position:absolute;right:calc(-1 * (var(--gap) + 34px));top:50%;transform:translateY(-50%) scale(.6);
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;color:#fff;opacity:0;transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+}
+.row .status.show{opacity:1;transform:translateY(-50%) scale(1)}
+.row .status.tappable{cursor:pointer}
+.row .status.tappable::after{content:"";position:absolute;inset:-10px}
+.row .status.tappable:active{transform:translateY(-50%) scale(.9)}
+.row .status.ok{background:var(--ok)} .row .status.bad{background:var(--bad)} .row .status.warn{background:var(--warn)}
+.arrow{color:#b9bdca;font-size:18px;line-height:1;margin:-2px 0}
+.cell{
+  height:var(--tile-size);border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:calc(var(--tile-size) * .5);font-weight:800;position:relative;
+  transition:transform .15s,background .15s,color .15s,box-shadow .15s;
+}
+.cell.plain{background:transparent;color:var(--ink);box-shadow:none;font-size:calc(var(--tile-size) * .6);height:calc(var(--tile-size) * .9)}
+.row.target{margin-top:16px}
+.row.target .tlabel{position:absolute;left:0;right:0;top:-14px;text-align:center;font-size:10px;font-weight:800;letter-spacing:.2em;color:var(--muted)}
+.cell.fixed{background:var(--dark);color:#fff;box-shadow:0 3px 0 #1c1f2a}
+.cell.slot{background:var(--tile);color:var(--ink);box-shadow:inset 0 0 0 2px var(--gold);cursor:pointer}
+.cell.slot.empty{color:transparent}
+.cell.slot.locked{background:var(--lock);color:#9a9fae;box-shadow:inset 0 0 0 2px #cfd3dd;cursor:default}
+.cell.slot.locked::after{content:"";position:absolute;bottom:6px;width:10px;height:3px;border-radius:2px;background:#c3c7d2}
+.cell.slot.changed{color:var(--accent)}
+.cell.slot.goal,.cell.slot.goal.changed,.cell.slot.goal.same{color:#fff;background:var(--ok);box-shadow:none}   /* letter now matches the target at this position */
+.row.bad .cell.slot.goal:not(.locked){color:var(--bad);background:var(--tile)}
+.cell.slot.same{color:var(--ink)}
+.cell.slot.revealed{color:#8a8f9c}
+.cell.slot.goal.revealed{color:#fff}   /* a hinted letter that matches the target is still white on green */
+.cell.slot.cursor{box-shadow:inset 0 0 0 3px var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.cell.slot.cursor::before{content:"";position:absolute;width:2px;height:46%;background:var(--accent);border-radius:1px;animation:blink 1s steps(2) infinite}
+.cell.slot.cursor.filled::before{display:none}
+.row.bad .cell.slot:not(.locked){box-shadow:inset 0 0 0 2px var(--bad);color:var(--bad);animation:shake .3s}
+.row.bad.still .cell.slot{animation:none;cursor:default}
+.row.bad.still .status{pointer-events:none}
+.row.bad .cell.slot.cursor,.row.warn .cell.slot.cursor{box-shadow:inset 0 0 0 3px var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.row.warn .cell.slot:not(.locked){box-shadow:inset 0 0 0 2px var(--warn);color:var(--warn)}
+.row.done .cell.slot{cursor:default}
+.cell.pop{animation:pop .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pulse{0%,100%{box-shadow:inset 0 0 0 3px var(--accent)}50%{box-shadow:inset 0 0 0 3px rgba(79,107,255,.35)}}
+@keyframes blink{to{opacity:0}}
+.cell.drop,.cell.pop{transition:none}
+.cell.drop{animation:drop .34s cubic-bezier(.2,.8,.3,1) both}
+/* target reached: tiles hop once, left to right, after they land */
+/* hop uses fill-mode 'none' so its waiting state does not override the fall (both animate transform; the later one wins) */
+.cell.drop.hop{animation:drop .34s cubic-bezier(.2,.8,.3,1) both, hop .62s linear none}
+.cell.pop.hop{animation:pop .28s cubic-bezier(.34,1.56,.64,1), hop .62s linear none}
+/* a real arc: ease-out on the way up, ease-in on the way down, then a tiny soft rebound */
+@keyframes hop{0%{transform:none;animation-timing-function:cubic-bezier(.25,.1,.25,1)}
+  40%{transform:translateY(-12px);animation-timing-function:cubic-bezier(.55,0,.85,.45)}
+  72%{transform:none;animation-timing-function:cubic-bezier(.25,.1,.25,1)}
+  86%{transform:translateY(-3px);animation-timing-function:cubic-bezier(.55,0,.75,.5)}
+  100%{transform:none}}
+@keyframes drop{from{transform:translateY(calc(-1 * (var(--tile-size) + var(--gap))));opacity:1}to{transform:none;opacity:1}}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.msg{text-align:center;color:var(--ink);font-size:15px;margin:22px 0 0;min-height:22px;font-weight:600}
+.msg:empty{display:none}
+.msg.soft{color:var(--muted);font-weight:500}
+
+footer{
+  position:fixed;left:0;right:0;bottom:0;background:var(--bg);
+  border-top:1px solid var(--line);
+  padding:8px 6px calc(env(safe-area-inset-bottom) + 10px);
+  box-shadow:0 -8px 24px rgba(30,35,60,.05);
+}
+.tbar{display:flex;align-items:center;justify-content:center;gap:14px;max-width:520px;margin:0 auto 8px;padding:6px 10px}
+.tbar .tl{font-size:10px;font-weight:800;letter-spacing:.2em;color:var(--muted)}
+.tbar .tw{display:flex;gap:6px}
+.tbar .tw b{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--dark);color:#fff;font-size:17px;font-weight:800}
+.tbar .ts{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+footer.done .tbar{display:none}
+.kb{display:flex;flex-direction:column;gap:7px;max-width:520px;margin:0 auto}
+.kb .krow{display:flex;justify-content:center;gap:5px}
+.key{
+  flex:1;max-width:46px;height:50px;border:0;border-radius:9px;background:#fff;color:var(--ink);
+  font-size:17px;font-weight:700;box-shadow:0 2px 0 #d4d8e3;cursor:pointer;transition:transform .08s,background .08s;
+  display:flex;align-items:center;justify-content:center;
+}
+.key:active{transform:translateY(2px);box-shadow:0 0 0 #d4d8e3;background:#e9ecf4}
+.key.wide{max-width:72px;flex:1.5;font-size:20px}
+.key.spacer{visibility:hidden;flex:.5}
+#nextBtn{
+  display:none;flex:0 0 60px;width:60px;height:60px;border:0;border-radius:16px;
+  background:var(--dark);color:#fff;font-size:24px;font-weight:800;letter-spacing:.06em;cursor:pointer;
+  box-shadow:0 6px 18px rgba(30,35,60,.22);transform:translateY(20px);opacity:0;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+}
+.donebar{display:none;gap:10px;width:calc(100% - 20px);max-width:480px;margin:0 auto;justify-content:center}
+footer.done .kb{display:none} footer.done .donebar{display:flex}
+footer.done #nextBtn{display:block}
+#retryBtn{display:none;flex:0 0 50%;padding:0 10px;height:60px;white-space:nowrap;font-size:14px!important;border:0;border-radius:16px;background:var(--ok);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;cursor:pointer;
+  box-shadow:0 6px 18px rgba(46,189,107,.28);transform:translateY(20px);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+footer.done #nextBtn.in ~ *, footer.done .donebar.in #retryBtn{transform:translateY(0);opacity:1}
+#retryBtn:active{transform:scale(.98)}
+/* perfect solve: the praise card sits in the footer row, square NEXT to its right */
+#praise{display:none;flex:1 1 auto;height:60px;border-radius:16px;background:var(--ok);color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 6px 18px rgba(46,189,107,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#praise .pt{font-size:17px;font-weight:800;letter-spacing:.12em} #praise .pt .ic{font-size:20px;margin-right:8px;vertical-align:-2px}
+#praise .ps{font-size:10px;font-weight:800;letter-spacing:.14em;opacity:.85}
+/* perfect solve: the cheer card stays on the board under the target row; footer shows only the square NEXT */
+body.daily footer.done #praise{flex:0 0 60px;width:100%}
+#countdown{display:none;flex:1;height:56px;border-radius:16px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);align-items:center;justify-content:center;gap:12px}
+#countdown .cl{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted)}
+#countdown .ct{font-size:20px;font-weight:800;letter-spacing:.06em;color:var(--ink);font-variant-numeric:tabular-nums}
+body.beat footer.done #retryBtn{display:block}   /* only when the player used more steps than the best route */
+body.daily footer.done #nextBtn{display:none}
+/* play limit: after N regular levels, a cooldown timer sits above NEXT PUZZLE and the button is locked */
+#lockbar{display:none;width:calc(100% - 20px);max-width:480px;margin:0 auto 10px;height:52px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);align-items:center;justify-content:center;gap:12px}
+#lockbar .cl{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted)} #lockbar .ct{font-size:20px;font-weight:800;letter-spacing:.06em;color:var(--ink);font-variant-numeric:tabular-nums}
+body.locked footer.done #lockbar{display:flex}
+body.daily #lockbar{display:none!important}
+body.daily #hintBtn{display:none}   /* no hints in the Daily Streak */   /* the daily has its own midnight countdown; the hourly lock is regular-mode only */
+body.locked footer.done #nextBtn.in{opacity:.4;pointer-events:none;box-shadow:none}
+body.daily footer.done #countdown{display:flex}
+body.daily footer.done .donebar{flex-direction:column}   /* challenge button, countdown, home — stacked */
+body.daily.beat footer.done #retryBtn{flex:0 0 52px;height:52px;width:auto;min-width:50%;padding:0 20px;align-self:center}
+body.daily footer.done #countdown{flex:0 0 56px;width:100%}
+#homeBtn{display:none;flex:0 0 52px;width:100%;height:52px;border:0;border-radius:16px;background:var(--dark);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;cursor:pointer;box-shadow:0 6px 18px rgba(30,35,60,.22)}
+body.daily footer.done #homeBtn{display:block}
+#homeBtn:active{transform:scale(.98)}
+footer.done #nextBtn.in{transform:translateY(0);opacity:1}
+#nextBtn.slow{transform:translateY(0) scale(.6);transition:transform .7s cubic-bezier(.34,1.4,.64,1),opacity .6s ease}   /* delayed entrance: a slow, soft pop */
+footer.done #nextBtn.in.slow{transform:translateY(0) scale(1)}
+#nextBtn:active{transform:scale(.98)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+/* ---------------- Coins ---------------- */
+.coin{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:999px;background:#fff;box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--ink);white-space:nowrap;vertical-align:middle;font-variant-numeric:tabular-nums}
+.coin .ci{font-size:13px}
+.coin.bump{animation:pop .35s cubic-bezier(.34,1.56,.64,1)}
+.coin.minus{color:var(--bad)}
+header .level{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#menu .mtop .coin{padding:8px 14px 8px 10px;font-size:14px}
+.cost{position:absolute;right:-4px;bottom:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--dark);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;letter-spacing:0;box-shadow:0 0 0 2px var(--bg)}
+.cost.free{background:var(--ok)}
+.cost.none{display:none}
+#hintBtn,#restartBtn{position:relative;overflow:visible}
+#restartBtn.alert .cost{background:#fff;color:var(--accent)}
+.fly{position:fixed;z-index:120;font-size:15px;font-weight:800;letter-spacing:.04em;pointer-events:none;color:var(--ok);text-shadow:0 1px 0 #fff;animation:flyup 1.1s ease-out forwards}
+.fly.neg{color:var(--bad)}
+@keyframes flyup{0%{opacity:0;transform:translateY(8px) scale(.8)}15%{opacity:1;transform:translateY(0) scale(1.05)}100%{opacity:0;transform:translateY(-34px) scale(1)}}
+.earn{display:none;position:relative;height:40px;margin:18px 0 0;text-align:center}
+.earn.show{display:block}
+.earn .ei{position:absolute;left:0;right:0;top:0;font-size:15px;font-weight:800;letter-spacing:.14em;color:var(--ink);opacity:0;animation:earnUp 1.6s ease-out forwards}
+.earn .ei b{color:var(--ok)}
+@keyframes earnUp{0%{opacity:0;transform:translateY(14px) scale(.9)}15%{opacity:1;transform:translateY(4px) scale(1)}65%{opacity:1;transform:translateY(-4px)}100%{opacity:0;transform:translateY(-30px)}}
+/* watch-ad button (menu + low-balance dialog) */
+.adbtn{border:0;border-radius:16px;background:#fff;color:var(--ink);font:inherit;font-weight:800;font-size:13px;letter-spacing:.06em;padding:14px 18px;cursor:pointer;box-shadow:0 8px 22px rgba(30,35,60,.1),inset 0 0 0 1px var(--line);display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.adbtn .ar{color:var(--ok)} .adbtn .al{font-size:10px;color:var(--muted);letter-spacing:.12em}
+.adbtn:active{transform:scale(.98)} .adbtn.off{display:none}
+#coinDlg .adbtn{margin-top:8px;box-shadow:inset 0 0 0 2px var(--line)}
+/* fake ad (prototype stand-in for the rewarded-ad SDK) */
+#adFake{position:fixed;inset:0;z-index:130;background:#111;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#adFake.show{display:flex}
+#adFake .t{font-size:11px;font-weight:800;letter-spacing:.3em;color:#888}
+#adFake .b{font-size:26px;font-weight:800;letter-spacing:.06em}
+#adFake .bar{width:220px;height:6px;border-radius:3px;background:#333;overflow:hidden}
+#adFake .bar i{display:block;height:100%;width:0;background:var(--ok);transition:width 3s linear}
+#adFake .n{font-size:12px;color:#888}
+/* nickname prompt */
+#nameDlg{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.35)}
+#nameDlg.show{display:flex}
+#nameDlg .card{background:#fff;border-radius:22px;padding:24px;width:min(88%,340px);text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#nameDlg .k{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--muted)} #nameDlg .c{font-size:20px;font-weight:800;color:var(--ink);margin:8px 0 14px}
+#nameDlg input{width:100%;box-sizing:border-box;border:0;border-radius:12px;background:var(--tile);box-shadow:inset 0 0 0 2px var(--line);padding:14px;font:inherit;font-size:18px;font-weight:800;text-align:center;color:var(--ink);letter-spacing:.06em}
+#nameDlg input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
+#nameDlg button{margin-top:14px;width:100%;border:0;border-radius:14px;background:var(--dark);color:#fff;font:inherit;font-weight:800;font-size:14px;letter-spacing:.08em;padding:14px;cursor:pointer}
+/* stats (editor) */
+#editor .stats{background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 1px var(--line);font-size:12px;color:var(--ink)}
+#editor .stats table{width:100%;border-collapse:collapse;margin-top:6px} #editor .stats th{font-size:9px;letter-spacing:.12em;color:var(--muted);text-align:left;padding:4px 4px;border-bottom:1px solid var(--line)} #editor .stats td{padding:6px 4px;border-bottom:1px solid #f0f2f7;font-weight:700;white-space:nowrap}
+#editor .stats .h{font-size:10px;font-weight:800;letter-spacing:.18em;color:var(--muted);margin:12px 0 4px} #editor .stats .h:first-child{margin-top:0}
+#editor .stats .empty{color:var(--muted);font-weight:600;padding:6px 0}
+/* coin dialog (low balance) */
+#coinDlg{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.35)}
+#coinDlg.show{display:flex}
+#coinDlg .card{background:#fff;border-radius:22px;padding:24px 24px 18px;width:min(88%,340px);text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#coinDlg .k{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--muted)}
+#coinDlg .c{font-size:20px;font-weight:800;color:var(--ink);margin:8px 0 4px}
+#coinDlg .n{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:16px}
+#coinDlg button{border:0;border-radius:14px;font:inherit;font-weight:800;font-size:14px;letter-spacing:.06em;padding:13px 18px;cursor:pointer;width:100%;margin-top:8px}
+#coinDlg .go{background:var(--ok);color:#fff}
+#coinDlg .go:disabled{background:var(--lock);color:#9a9fae}
+#coinDlg .no{background:transparent;color:var(--muted)}
+/* editor: coins section */
+#editor .sec{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--muted);margin:22px 0 10px}
+#editor .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 1px var(--line)}
+#editor .cgrid label{display:flex;flex-direction:column;gap:4px;font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--muted)}
+
+/* ---------------- Main menu ---------------- */
+#menu{position:fixed;inset:0;z-index:90;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:max(18px,env(safe-area-inset-top)) 20px 28px;overflow:auto}
+#menu.show{display:flex}
+#menu .mtop{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center}
+#menu .mtop button{border:0;border-radius:999px;width:42px;height:42px;background:#fff;color:var(--ink);font-size:18px;box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);cursor:pointer}
+#menu .logo{margin:10vh 0 6vh;text-align:center}
+#menu .logo .ltiles{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+#menu .logo .ltiles b{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;background:var(--dark);color:#fff;box-shadow:0 3px 0 #1c1f2a}
+#menu .logo .ltiles b.g{background:var(--ok);box-shadow:0 3px 0 #23945a}
+#menu .logo h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.2em;color:var(--ink)}
+#menu .modes2{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
+#menu .mbtn{border:0;border-radius:20px;padding:18px 20px;text-align:left;display:flex;align-items:center;gap:16px;cursor:pointer;box-shadow:0 8px 22px rgba(30,35,60,.14);transition:transform .12s}
+#menu .mbtn:active{transform:scale(.98)}
+#menu .mbtn .ic{font-size:30px;width:44px;text-align:center}
+#menu .mbtn .tt{font-size:17px;font-weight:800;letter-spacing:.1em}
+#menu .mbtn .ss{font-size:12px;font-weight:700;letter-spacing:.06em;opacity:.8;margin-top:3px}
+#menu .mbtn.journey{background:var(--dark);color:#fff}
+#menu .mbtn.daily{background:#fff;color:var(--ink);box-shadow:0 8px 22px rgba(30,35,60,.1),inset 0 0 0 1px var(--line)}
+#menu .mbtn.daily.done{background:var(--ok);color:#fff;box-shadow:0 8px 22px rgba(46,189,107,.3)}
+#menu .foot{margin-top:auto;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--muted)}
+/* ---------------- City editor ---------------- */
+#editor{position:fixed;inset:0;z-index:95;background:var(--bg);display:none;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 14px 20px;overflow:auto}
+#editor.show{display:flex}
+#editor .etop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+#editor h2{margin:0;font-size:14px;font-weight:800;letter-spacing:.24em;color:var(--muted)}
+#editor .etop button{border:0;border-radius:999px;padding:10px 14px;background:#fff;color:var(--ink);font-weight:800;font-size:13px;box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);cursor:pointer}
+#editor .etop button.save{background:var(--ok);color:#fff}
+#editor .hint{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.4}
+#editor .city{background:#fff;border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 1px var(--line)}
+#editor .city .r1{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+#editor .city .idx{width:26px;height:26px;border-radius:8px;background:var(--dark);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+#editor input{border:0;border-radius:10px;background:var(--tile);box-shadow:inset 0 0 0 1.5px var(--line);padding:10px;font:inherit;font-size:15px;font-weight:700;color:var(--ink);min-width:0}
+#editor input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
+#editor .city .name{flex:1}
+#editor .city .del{border:0;background:transparent;color:var(--bad);font-size:20px;cursor:pointer;padding:4px 6px;flex:none}
+#editor .city .r2{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#editor .city label{display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--muted)}
+#editor .city input.num{text-align:center;padding:10px 4px}
+#editor .city .sum{grid-column:1 / -1;font-size:11px;font-weight:700;color:var(--muted);text-align:right}
+#editor .city .sum.bad{color:var(--bad)}
+#editor .add{border:2px dashed var(--line);border-radius:16px;background:transparent;padding:14px;font:inherit;font-weight:800;font-size:13px;letter-spacing:.1em;color:var(--muted);cursor:pointer;width:100%}
+#editor .danger{width:100%;border:0;border-radius:16px;background:#fff;color:var(--bad);font:inherit;font-weight:800;font-size:14px;letter-spacing:.08em;padding:16px;cursor:pointer;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 2px var(--bad)}
+#editor .danger.arm{background:var(--bad);color:#fff}
+#editor .reset{margin-top:14px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+/* ---------------- Journey: city themes + arrival card ---------------- */
+body{transition:background .8s}
+body[data-theme="0"]{background:linear-gradient(180deg,#fde8d8 0%,var(--bg) 55%)}
+body[data-theme="1"]{background:linear-gradient(180deg,#dcecff 0%,var(--bg) 55%)}
+body[data-theme="2"]{background:linear-gradient(180deg,#ffe3ec 0%,var(--bg) 55%)}
+body[data-theme="3"]{background:linear-gradient(180deg,#e2f6e6 0%,var(--bg) 55%)}
+body[data-theme="4"]{background:linear-gradient(180deg,#f3e4ff 0%,var(--bg) 55%)}
+body[data-theme="5"]{background:linear-gradient(180deg,#fff4cf 0%,var(--bg) 55%)}
+body[data-theme="6"]{background:linear-gradient(180deg,#d9f3f7 0%,var(--bg) 55%)}
+body[data-theme="7"]{background:linear-gradient(180deg,#ffe0d0 0%,var(--bg) 55%)}
+body[data-theme="8"]{background:linear-gradient(180deg,#e0e6ff 0%,var(--bg) 55%)}
+body[data-theme="9"]{background:linear-gradient(180deg,#e9f5d6 0%,var(--bg) 55%)}
+footer{background:transparent!important}
+/* arrival: near-black backdrop (game 10% visible) → confetti above it → card on top */
+#arriveBg{position:fixed;inset:0;z-index:84;display:none;background:rgba(0,0,0,.9)}
+#arrive{position:fixed;inset:0;z-index:87;display:none;align-items:center;justify-content:center;background:transparent}
+body.arriving #arriveBg{display:block}
+body.arriving #confetti{z-index:86}
+#arrive.show{display:flex}
+#arrive .card{background:#fff;border-radius:24px;padding:28px 30px;text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .35s cubic-bezier(.34,1.56,.64,1);min-width:240px}
+#arrive .k{font-size:11px;font-weight:800;letter-spacing:.24em;color:var(--muted)}
+#arrive .c{font-size:30px;font-weight:800;letter-spacing:.08em;color:var(--ink);margin:8px 0 4px}
+#arrive .n{font-size:13px;font-weight:700;color:var(--muted)}
+#arrive button{margin-top:18px;border:0;border-radius:14px;background:var(--dark);color:#fff;font:inherit;font-weight:800;font-size:14px;letter-spacing:.08em;padding:14px 26px;cursor:pointer}
+#dailyBtn{display:none}
+
+/* ---- UPWARD ladder (test): start word at the bottom, rows stack upward, letters rise from the row below ---- */
+body.up .ladder,body.up #tut .tboard{flex-direction:column-reverse}
+body.up .arrow{transform:rotate(180deg)}
+body.up #tut .row.target{margin-top:0;margin-bottom:16px}
+body.up .cell.drop{animation-name:dropUp}
+body.up .cell.drop.hop{animation-name:dropUp,hop}
+@keyframes dropUp{from{transform:translateY(calc(var(--tile-size) + var(--gap)));opacity:1}to{transform:none;opacity:1}}
+/* ---------------- Tutorial overlay ---------------- */
+#tut{position:fixed;inset:0;z-index:97;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:max(18px,env(safe-area-inset-top)) 16px 24px;overflow:auto}
+#tut.show{display:flex}
+#tut .th{font-size:13px;font-weight:800;letter-spacing:.28em;color:var(--muted);margin:10px 0 50px}
+#tut .tt{display:none;font-size:22px;font-weight:800;letter-spacing:.04em;color:var(--ink);margin:0 0 18px;text-align:center}
+#tut .tboard{--n:3;--tile-size:56px;--gap:10px;display:flex;flex-direction:column;align-items:center;gap:var(--gap);padding:0 44px}
+#tut .tboard .row .status{right:calc(-1 * (var(--gap) + 30px));width:30px;height:30px;font-size:15px}
+#tut .tboard .cell.plain{color:#9a9fae}
+#tut .cap{display:none;min-height:44px;margin:10px 0 6px;text-align:center;font-size:15px;font-weight:600;color:var(--ink);max-width:320px;line-height:1.4;transition:opacity .2s}
+#tut .cap.dim{opacity:0}
+#tut .tkb{display:none;flex-direction:column;gap:5px;margin:4px 0 22px}
+#tut .tkb .krow{display:flex;justify-content:center;gap:4px}
+#tut .tkb .key{width:28px;max-width:28px;height:36px;font-size:13px;flex:none;border-radius:6px;cursor:default;transition:transform .08s,background .12s,color .12s}
+#tut .tkb .key.hit{background:var(--accent);color:#fff;transform:translateY(2px);box-shadow:0 0 0 #d4d8e3}
+#tut .gotit{width:min(50%,180px);height:44px;font-size:14px;border:0;border-radius:16px;background:var(--dark);color:#fff;font-weight:800;letter-spacing:.08em;cursor:pointer;box-shadow:0 6px 18px rgba(30,35,60,.22);margin-top:28px}
+#tut .spark{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;pointer-events:none;z-index:2}
+#tut .gotit:active{transform:scale(.98)}
+#helpBtn,#menuBtn{width:38px;justify-content:center;padding:0!important;font-size:15px}
+@media (prefers-reduced-motion:reduce){ #tut .cell.pop{animation:none} }
+
+</style>
+</head>
+<body tabindex="0">
+<header>
+  <div><h1>WORD LADDER</h1><div class="level"><span id="levelLbl"></span><span class="coin" id="coinPill"><span class="ci">🪙</span><span id="coinVal">0</span></span></div></div>
+  <div class="hbtns"><button id="menuBtn" aria-label="Main menu">🏠</button><button id="helpBtn" aria-label="How to play">?</button><button id="dailyBtn" aria-label="Daily challenge">📅<span class="lb">DAILY</span></button><button id="restartBtn" aria-label="Restart level">↺<span class="lb">RESTART</span><span class="cost none" id="restartCost">10</span></button><button id="hintBtn" aria-label="Hint">💡<span class="lb">HINT</span><span class="cost" id="hintCost">25</span></button></div>
+</header>
+<div class="modes"><div class="seg"><button id="modeClassic">CLASSIC</button><button id="modeEndless" class="on">ENDLESS</button></div></div>
+<main>
+  <p class="sub" id="subLbl">Change ONE letter at a time to reach the target word.</p>
+  <p class="fill" id="fillLbl"></p>
+  <div class="board" id="board"><div class="ladder" id="ladder"></div><aside class="best" id="best"></aside></div>
+  <p class="earn" id="earnLbl"></p>
+  <p class="msg" id="msg"></p>
+  <p class="steps" id="stepsLbl"></p>
+</main>
+
+
+<div id="menu" aria-label="Main menu">
+  <div class="mtop"><button id="settingsBtn" aria-label="Editor">⚙️</button><span class="coin" id="menuCoin"><span class="ci">🪙</span><span id="menuCoinVal">0</span></span><button id="menuHelp" aria-label="Rules">?</button></div>
+  <div class="logo"><div class="ltiles"><b>W</b><b>O</b><b>R</b><b class="g">D</b></div><h1>WORD LADDER</h1></div>
+  <div class="modes2">
+    <button class="mbtn journey" id="playJourney"><span class="ic">🧭</span><span><div class="tt">JOURNEY</div><div class="ss" id="journeySub">START YOUR TRIP</div></span></button>
+    <button class="mbtn daily" id="playDaily"><span class="ic">🔥</span><span><div class="tt">DAILY STREAK</div><div class="ss" id="dailySub">TODAY'S 5-LETTER PUZZLE</div></span></button>
+  </div>
+  <div class="modes2" style="margin-top:14px"><button class="adbtn" id="adBtnMenu" type="button"><span>📺 WATCH AD</span><span class="ar" id="adRew1">+50 🪙</span><span class="al" id="adLeft1">3 LEFT TODAY</span></button></div>
+  <div class="foot">MY DREAM GAMES</div>
+</div>
+<div id="adFake"><div class="t">ADVERTISEMENT</div><div class="b">🎬 Your ad here</div><div class="bar"><i id="adBar"></i></div><div class="n">Rewarded ad placeholder · pays out when it finishes</div></div>
+<div id="editor" aria-label="City editor">
+  <div class="etop"><button id="edClose">← BACK</button><h2>CITY EDITOR</h2><button class="save" id="edSave">SAVE</button></div>
+  <p class="hint">Journey visits these cities in order. For each city set how many levels it has and the word-length mix (3 / 4 / 5 letters) as percentages — they should total 100.</p>
+  <div id="edList"></div>
+  <button class="add" id="edAdd">+ ADD CITY</button>
+  <div class="sec">COINS</div>
+  <div class="cgrid" id="edCoins"></div>
+  <button class="reset" id="edReset">Reset to default cities</button>
+  <div class="sec">METRICS</div>
+  <div class="stats" id="stats"><button class="add" id="statsLoad" type="button">LOAD STATS</button></div>
+  <div class="sec">PLAYER DATA</div>
+  <button class="danger" id="edWipe" type="button">⟲ RESET PROGRESS</button>
+  <p class="hint">Clears coins, Journey position, daily streak and today's daily. Cities and coin settings are kept.</p>
+</div>
+<div id="nameDlg"><div class="card"><div class="k">WELCOME</div><div class="c">What should we call you?</div><input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="off"><button id="nameGo" type="button">LET'S PLAY</button></div></div>
+<div id="coinDlg"><div class="card"><div class="k">NOT ENOUGH COINS</div><div class="c" id="cdTitle">Hint costs 25</div><div class="n" id="cdNote"></div><button class="go" id="cdGo">FREE HINT</button><button class="adbtn" id="adBtnDlg" type="button"><span>📺 WATCH AD</span><span class="ar" id="adRew2">+50 🪙</span><span class="al" id="adLeft2">3 LEFT</span></button><button class="no" id="cdNo">Not now</button></div></div>
+<div id="arriveBg"></div><div id="arrive"><div class="card"><div class="k">WELCOME TO</div><div class="c" id="arrCity">PARIS</div><div class="n" id="arrNote">10 LEVELS AHEAD</div><button id="arrGo" type="button">LET'S GO →</button></div></div>
+<div id="tut" aria-label="Rules">
+  <div class="th">RULES</div>
+  <div class="tt">Change one letter at a time</div>
+  <div class="tboard" id="tutBoard"></div>
+  <div class="cap" id="tutCap"></div>
+  <div class="tkb" id="tutKb"></div>
+  <button class="gotit" id="gotIt" type="button">GOT IT</button>
+</div>
+<footer id="footer">
+  <div class="tbar" id="tbar"><span class="tl">TARGET</span><span class="tw" id="tbarWord"></span><span class="ts" id="tbarSteps"></span></div>
+  <div class="kb" id="kb"></div>
+  <div id="lockbar"><span class="cl">🔒 NEXT PUZZLE IN</span><span class="ct" id="lockTime">01:00:00</span></div>
+  <div class="donebar" id="donebar"><div id="praise"><div class="pt" id="praiseT"></div><div class="ps" id="praiseS"></div></div><button id="retryBtn">↺ RESTART</button><button id="nextBtn" aria-label="Next puzzle">→</button><div id="countdown"><span class="cl">NEXT AT 9 AM · IN</span><span class="ct" id="countTime">00:00:00</span></div><button id="homeBtn" type="button">🏠 MENU</button></div>
+</footer>
+<canvas id="confetti"></canvas>
+
+<script>
+const DATA = {"dict":["ABACK","ABATE","ABBEY","ABBOT","ABED","ABHOR","ABIDE","ABLE","ABODE","ABORT","ABOUT","ABOVE","ABUSE","ABUT","ABYSS","ACE","ACHE","ACID","ACME","ACNE","ACORN","ACRE","ACT","ACTIN","ACTOR","ACUTE","ADAGE","ADAPT","ADD","ADDER","ADEPT","ADMIT","ADOBE","ADOPT","ADORE","ADORN","ADULT","AEGIS","AEON","AFAR","AFFIX","AFOOT","AFOUL","AFTER","AGAIN","AGAPE","AGAR","AGATE","AGAVE","AGE","AGED","AGENT","AGILE","AGO","AGONY","AGORA","AGREE","AHEAD","AID","AIDE","AIM","AIR","AIRY","AISLE","AJAR","AKIN","ALARM","ALBUM","ALDER","ALE","ALERT","ALGAE","ALGAL","ALIAS","ALIBI","ALIEN","ALIGN","ALIKE","ALINE","ALIVE","ALKYL","ALL","ALLAY","ALLEY","ALLOT","ALLOW","ALLOY","ALLY","ALMS","ALOE","ALOFT","ALOHA","ALONE","ALONG","ALOOF","ALOUD","ALPHA","ALSO","ALTAR","ALTER","ALTO","ALUM","AMASS","AMAZE","AMBER","AMEND","AMID","AMIGO","AMINE","AMINO","AMIR","AMISS","AMITY","AMMO","AMOK","AMONG","AMOUR","AMPLE","AMUSE","AND","ANEW","ANGEL","ANGER","ANGLE","ANGRY","ANGST","ANIL","ANIMA","ANIME","ANION","ANISE","ANKLE","ANNA","ANNEX","ANNOY","ANODE","ANT","ANTE","ANTI","ANTSY","ANVIL","ANY","AORTA","APART","APEX","APNEA","APPLE","APPLY","APRON","APT","AQUA","ARBOR","ARC","ARCH","ARCO","ARE","AREA","ARENA","ARGON","ARGUE","ARGUS","ARIA","ARID","ARISE","ARK","ARM","ARMOR","ARMY","AROMA","ARRAS","ARRAY","ARROW","ARSON","ART","ARTY","ASCOT","ASH","ASHY","ASIDE","ASK","ASKEW","ASPEN","ASSAY","ASSET","ASTER","ATE","ATLAS","ATOLL","ATOM","ATONE","ATOP","ATTIC","AUDIO","AUDIT","AUGER","AUNT","AUNTY","AURA","AURAL","AUTO","AVAIL","AVERT","AVIAN","AVID","AVOID","AWAIT","AWAKE","AWARD","AWARE","AWASH","AWAY","AWE","AWFUL","AWOL","AWRY","AXE","AXIAL","AXIOM","AXIS","AXLE","AXON","AZURE","BABA","BABE","BABEL","BABY","BACH","BACK","BACON","BAD","BADGE","BAG","BAGEL","BAGGY","BAHT","BAIL","BAIT","BAKE","BAKER","BALD","BALDY","BALE","BALK","BALL","BALM","BALMY","BAN","BANAL","BAND","BANDY","BANE","BANG","BANJO","BANK","BAR","BARB","BARD","BARE","BARGE","BARK","BARN","BARON","BASAL","BASE","BASH","BASIC","BASIL","BASIN","BASIS","BASK","BASS","BAST","BAT","BATCH","BATE","BATH","BATHE","BATIK","BATON","BATTY","BAY","BAYOU","BAZAR","BEACH","BEAD","BEAK","BEAM","BEAN","BEAR","BEARD","BEAST","BEAT","BEAU","BEBOP","BECK","BED","BEE","BEECH","BEEF","BEEFY","BEEN","BEEP","BEER","BEET","BEG","BEGIN","BEGUN","BEIGE","BEING","BELL","BELLE","BELLY","BELOW","BELT","BENCH","BEND","BENNY","BENT","BERET","BERG","BERRY","BERTH","BERYL","BESET","BET","BETA","BETEL","BETH","BEVEL","BEVY","BEZEL","BIAS","BIBLE","BID","BIDE","BIDET","BIFF","BIG","BIGHT","BIGOT","BIKE","BIKER","BILE","BILGE","BILL","BIN","BIND","BINGE","BINGO","BIOME","BIRCH","BIRD","BIRTH","BISON","BIT","BITE","BITER","BITTY","BLACK","BLADE","BLAH","BLAME","BLAND","BLANK","BLAST","BLAZE","BLEAK","BLED","BLEED","BLEEP","BLEND","BLESS","BLEW","BLIMP","BLIND","BLINK","BLIP","BLISS","BLITZ","BLOAT","BLOB","BLOC","BLOCK","BLOKE","BLOND","BLOOD","BLOOM","BLOT","BLOW","BLOWN","BLUE","BLUFF","BLUNT","BLUR","BLURB","BLUSH","BOAR","BOARD","BOAST","BOAT","BOB","BOCK","BODE","BODY","BOGEY","BOGUS","BOIL","BOLA","BOLD","BOLL","BOLO","BOLT","BOLUS","BOMB","BOND","BONE","BONEY","BONG","BONGO","BONNY","BONUS","BONY","BOOK","BOOM","BOON","BOOST","BOOT","BOOTH","BOOTY","BOOZY","BORE","BORER","BORN","BORON","BOSH","BOSOM","BOSON","BOSS","BOSSY","BOTH","BOUGH","BOUND","BOUT","BOW","BOWEL","BOWER","BOWL","BOX","BOXER","BOXY","BOY","BOZO","BRA","BRACE","BRAD","BRAG","BRAID","BRAIN","BRAKE","BRAN","BRAND","BRANT","BRASH","BRASS","BRAT","BRAVE","BRAVO","BRAWL","BRAWN","BRAY","BREAD","BREAK","BREAM","BRED","BREED","BRENT","BREW","BRIAR","BRIBE","BRICK","BRIDE","BRIEF","BRIG","BRILL","BRIM","BRINE","BRING","BRINK","BRISK","BRIT","BROAD","BROKE","BROOD","BROOK","BROOM","BROTH","BROW","BROWN","BRUIN","BRUNT","BRUSH","BRUT","BRUTE","BUCK","BUD","BUDDY","BUDGE","BUFF","BUG","BUGGY","BUGLE","BUILD","BUILT","BULB","BULGE","BULK","BULKY","BULL","BULLY","BUM","BUMP","BUMPY","BUN","BUNCH","BUNG","BUNK","BUNNY","BUNT","BUOY","BURG","BURGH","BURKE","BURLY","BURN","BURNT","BURP","BURR","BURSA","BURST","BURY","BUS","BUSH","BUSHY","BUSS","BUST","BUSY","BUT","BUTT","BUTTE","BUTYL","BUY","BUYER","BUZZ","BYE","BYLAW","BYTE","CAB","CABAL","CABIN","CABLE","CACAO","CACHE","CADDY","CADET","CADRE","CAFE","CAGE","CAIRN","CAKE","CALF","CALIF","CALL","CALM","CAM","CAME","CAMEL","CAMEO","CAMP","CAMPY","CAN","CANAL","CANDY","CANE","CANNY","CANOE","CANON","CANT","CANTO","CAP","CAPE","CAPER","CAPO","CAR","CARAT","CARD","CARE","CARGO","CAROL","CARP","CARRY","CART","CARTE","CARVE","CASE","CASH","CASK","CAST","CASTE","CAT","CATCH","CATER","CATTY","CAUSE","CAVE","CEASE","CEDAR","CEDE","CELL","CELLO","CENT","CHAFF","CHAIN","CHAIR","CHALK","CHAMP","CHANT","CHAOS","CHAP","CHAR","CHARD","CHARM","CHART","CHASE","CHASM","CHAT","CHEAP","CHEAT","CHECK","CHEEK","CHEER","CHEF","CHESS","CHEST","CHEVY","CHEW","CHEWY","CHIC","CHICK","CHIEF","CHILD","CHILI","CHILL","CHIME","CHIMP","CHIN","CHINE","CHINO","CHIP","CHIRP","CHIT","CHOCK","CHOIR","CHOKE","CHOMP","CHOP","CHORD","CHORE","CHOSE","CHOW","CHUB","CHUCK","CHUG","CHUM","CHUMP","CHUNK","CHURN","CHUTE","CIDER","CIGAR","CINCH","CISCO","CITE","CITY","CIVIC","CIVIL","CLACK","CLAD","CLAIM","CLAM","CLAMP","CLAN","CLANG","CLANK","CLAP","CLASH","CLASP","CLASS","CLAW","CLAY","CLEAN","CLEAR","CLEFT","CLERK","CLICK","CLIFF","CLIMB","CLING","CLINK","CLIP","CLOAK","CLOCK","CLOG","CLONE","CLOSE","CLOT","CLOTH","CLOUD","CLOUT","CLOVE","CLOWN","CLUB","CLUE","CLUMP","CLUNG","COACH","COAL","COAST","COAT","COAX","COBRA","COCA","COCKY","COCO","COCOA","COD","CODA","CODE","CODER","CODEX","COIL","COIN","COKE","COLA","COLD","COLIC","COLON","COLOR","COLT","COMA","COMB","COMBO","COME","COMER","COMET","COMFY","COMIC","COMMA","COMP","CON","CONCH","CONDO","CONE","CONEY","CONGA","CONGO","COOK","COOL","COOP","COOT","COP","COPE","COPY","CORAL","CORD","CORE","CORGI","CORK","CORKY","CORN","CORNY","COST","COSTA","COSY","COTE","COUCH","COUGH","COUNT","COUP","COUPE","COURT","COVE","COVEN","COVER","COVET","COVEY","COW","COWER","COWL","COZY","CRAB","CRACK","CRAFT","CRAG","CRAM","CRAMP","CRANE","CRANK","CRASH","CRASS","CRATE","CRAVE","CRAWL","CRAZE","CRAZY","CREAK","CREAM","CREDO","CREED","CREEK","CREEP","CREPE","CREPT","CREST","CREW","CRIB","CRICK","CRIME","CRIMP","CRISP","CROCK","CROFT","CRONE","CRONY","CROOK","CROP","CRORE","CROSS","CROW","CROWD","CROWN","CRUD","CRUDE","CRUEL","CRUMB","CRUMP","CRUSH","CRUST","CRUX","CRY","CRYPT","CUBBY","CUBE","CUBIC","CUDDY","CUE","CUFF","CULL","CULT","CUMIN","CUP","CUPID","CURB","CURD","CURE","CURL","CURLY","CURRY","CURSE","CURT","CURVE","CURVY","CUSHY","CUSP","CUSS","CUT","CUTE","CYAN","CYCLE","CYNIC","CYST","CZAR","DAFT","DAILY","DAIRY","DAIS","DAISY","DALE","DALLY","DAM","DAME","DAMN","DAMP","DANCE","DANDY","DANK","DARE","DARK","DARN","DART","DASH","DATA","DATE","DATUM","DAWN","DAY","DAZE","DEAD","DEAF","DEAL","DEALT","DEAN","DEAR","DEATH","DEBIT","DEBT","DEBUG","DEBUT","DECAF","DECAL","DECAY","DECK","DECO","DECOR","DECOY","DECRY","DEED","DEEM","DEEP","DEER","DEFER","DEFT","DEFY","DEITY","DELAY","DELI","DELL","DELTA","DELVE","DEMON","DEN","DENIM","DENSE","DENT","DENY","DEPOT","DEPTH","DERBY","DESK","DETER","DETOX","DEUCE","DEVIL","DEW","DEWY","DIAL","DIARY","DIBS","DICE","DICEY","DID","DIE","DIET","DIG","DIGIT","DIKE","DILL","DIM","DIME","DIMER","DIN","DINAR","DINE","DINER","DING","DINGO","DINGY","DINK","DINKY","DINT","DIODE","DIP","DIRE","DIRK","DIRT","DIRTY","DISC","DISCO","DISH","DISK","DITCH","DITTO","DITTY","DIVA","DIVAN","DIVE","DIVER","DIZZY","DOCK","DODGE","DODGY","DODO","DOE","DOER","DOG","DOGGY","DOGMA","DOLE","DOLL","DOME","DOMED","DONE","DONG","DONNA","DONOR","DONUT","DOOM","DOOR","DOPE","DOPEY","DORM","DORY","DOSE","DOSS","DOT","DOTTY","DOUBT","DOUGH","DOUR","DOUSE","DOVE","DOWN","DOWNY","DOWRY","DOZE","DOZEN","DRAB","DRAFT","DRAG","DRAIN","DRAKE","DRAM","DRAMA","DRANK","DRAPE","DRAW","DRAWN","DREAD","DREAM","DRESS","DREW","DRIER","DRIFT","DRILL","DRINK","DRIP","DRIVE","DROLL","DRONE","DROOL","DROOP","DROP","DROVE","DROWN","DRUG","DRUM","DRUNK","DRY","DRYER","DUAL","DUCE","DUCHY","DUCK","DUCKY","DUCT","DUE","DUEL","DUET","DUG","DUKE","DULL","DUMB","DUMMY","DUMP","DUNCE","DUNE","DUNG","DUNK","DUO","DUPE","DURA","DUSK","DUSKY","DUST","DUSTY","DUTY","DUVET","DWARF","DWELL","DYE","DYER","EACH","EAGER","EAGLE","EAR","EARED","EARL","EARLY","EARN","EARTH","EASE","EASEL","EAST","EASY","EAT","EATER","EAVES","EBONY","ECHO","EDDY","EDEMA","EDGE","EDGY","EDICT","EDIT","EERIE","EGG","EGO","EIGHT","EJECT","ELAN","ELBOW","ELECT","ELEGY","ELF","ELITE","ELOPE","ELSE","ELUDE","ELVES","EMBED","EMBER","EMCEE","EMERY","EMIR","EMIT","EMPTY","ENACT","END","ENEMY","ENJOY","ENROL","ENSUE","ENTER","ENTRY","ENVOY","ENVY","EPIC","EPOCH","EPOXY","EQUAL","EQUIP","ERA","ERASE","ERECT","ERICA","ERODE","EROS","ERROR","ERUPT","ESSAY","ESTER","ETCH","ETHER","ETHIC","ETHOS","ETHYL","ETUDE","EURO","EVADE","EVE","EVEN","EVENT","EVER","EVERT","EVERY","EVICT","EVIL","EVOKE","EXACT","EXALT","EXAM","EXCEL","EXERT","EXILE","EXIST","EXIT","EXON","EXPAT","EXPEL","EXPO","EXTRA","EXUDE","EYE","FABLE","FACE","FACET","FACT","FADE","FAIL","FAIN","FAINT","FAIR","FAIRY","FAITH","FAKE","FAKER","FALL","FALSE","FAME","FAMED","FAN","FANCY","FANG","FANNY","FAR","FARCE","FARE","FARM","FARO","FART","FAST","FAT","FATAL","FATE","FATTY","FATWA","FAULT","FAUNA","FAUX","FAVOR","FAWN","FAX","FAZE","FEAR","FEAST","FEAT","FECES","FED","FEE","FEED","FEEL","FEET","FEIGN","FEINT","FELL","FELLA","FELON","FELT","FEMUR","FENCE","FEND","FERAL","FERN","FERRY","FESS","FETAL","FETCH","FETE","FETUS","FEUD","FEVER","FEW","FIAT","FIBER","FIBRE","FIELD","FIEND","FIERY","FIFE","FIFTH","FIFTY","FIGHT","FILE","FILET","FILL","FILLY","FILM","FILTH","FIN","FINAL","FINCH","FIND","FINE","FINER","FINK","FIRE","FIRM","FIRST","FIRTH","FISH","FISHY","FIST","FIT","FIVE","FIX","FIXER","FIZZ","FIZZY","FJORD","FLAG","FLAIL","FLAIR","FLAK","FLAKE","FLAKY","FLAME","FLANK","FLAP","FLARE","FLASH","FLASK","FLAT","FLAW","FLAX","FLEA","FLECK","FLED","FLEE","FLEET","FLESH","FLEW","FLEX","FLICK","FLIER","FLING","FLINT","FLIP","FLIRT","FLOAT","FLOCK","FLOG","FLOOD","FLOOR","FLOP","FLORA","FLOSS","FLOUR","FLOW","FLOWN","FLU","FLUE","FLUFF","FLUID","FLUKE","FLUME","FLUNG","FLUSH","FLUTE","FLUX","FLY","FLYER","FOAL","FOAM","FOCAL","FOCUS","FOE","FOG","FOGGY","FOIL","FOLD","FOLIO","FOLK","FOLLY","FOND","FONT","FOOD","FOOL","FOOT","FOR","FORAY","FORCE","FORD","FORE","FORGE","FORGO","FORK","FORM","FORT","FORTE","FORTH","FORTY","FORUM","FOSSA","FOUL","FOUND","FOUR","FOWL","FOX","FOXY","FOYER","FRAIL","FRAME","FRANC","FRANK","FRAT","FRAUD","FRAY","FREAK","FREE","FRESH","FRET","FRIAR","FRISK","FROCK","FROG","FROM","FRONT","FROST","FROTH","FROWN","FROZE","FRUIT","FRY","FRYER","FUDGE","FUEL","FUGUE","FULL","FUME","FUN","FUND","FUNK","FUNKY","FUNNY","FUR","FUROR","FURRY","FURY","FUSE","FUSS","FUSSY","FUTON","FUZZ","FUZZY","GABLE","GAFF","GAFFE","GAG","GAGA","GAGE","GAIN","GAIT","GALA","GALE","GALL","GAME","GAMMA","GAMUT","GANG","GAOL","GAP","GAPE","GARB","GAS","GASH","GASP","GATE","GATOR","GAUDY","GAUGE","GAUNT","GAUZE","GAVEL","GAY","GAZE","GEAR","GECKO","GEEK","GEESE","GEL","GEM","GENE","GENIE","GENRE","GENT","GERM","GET","GETUP","GHEE","GHOST","GHOUL","GIANT","GIDDY","GIFT","GIG","GILL","GILT","GIMP","GIN","GIRL","GIRTH","GIST","GIVE","GIVEN","GIVER","GIZMO","GLAD","GLADE","GLAND","GLARE","GLASS","GLAZE","GLEAM","GLEAN","GLEBE","GLEE","GLEN","GLIB","GLIDE","GLINT","GLITZ","GLOAT","GLOBE","GLOOM","GLORY","GLOSS","GLOVE","GLOW","GLUE","GLUM","GLUT","GLYPH","GNAW","GNOME","GOAD","GOAL","GOAT","GOD","GODLY","GOER","GOLD","GOLEM","GOLF","GONE","GONG","GOOD","GOODY","GOOEY","GOOF","GOOFY","GOON","GOOP","GOOSE","GORE","GORGE","GORY","GOT","GOUGE","GOURD","GOUT","GOWN","GRAB","GRACE","GRAD","GRADE","GRAFT","GRAIL","GRAIN","GRAM","GRAND","GRANT","GRAPE","GRAPH","GRASP","GRASS","GRATE","GRAVE","GRAVY","GRAY","GRAZE","GREAT","GREED","GREEN","GREET","GREW","GREY","GRID","GRIEF","GRILL","GRIM","GRIME","GRIMY","GRIN","GRIND","GRIP","GRIPE","GRIST","GRIT","GROAN","GROIN","GROOM","GROPE","GROSS","GROUP","GROUT","GROVE","GROW","GROWL","GROWN","GRUB","GRUFF","GRUNT","GUAN","GUANO","GUARD","GUAVA","GUESS","GUEST","GUIDE","GUILD","GUILE","GUILT","GUISE","GULAG","GULCH","GULF","GULL","GULLY","GULP","GUM","GUMBO","GUMMY","GUN","GURU","GUSH","GUST","GUSTO","GUSTY","GUT","GUTSY","GUY","GYPSY","GYRO","GYRUS","HABIT","HACK","HAD","HAIKU","HAIL","HAIR","HAIRY","HAJI","HAJJ","HALE","HALF","HALL","HALO","HALT","HALVE","HAM","HAMMY","HAND","HANDY","HANG","HAPPY","HARD","HARDY","HARE","HAREM","HARK","HARM","HARP","HARPY","HARSH","HART","HAS","HASH","HASTE","HASTY","HAT","HATCH","HATE","HATER","HAUL","HAUNT","HAVE","HAVEN","HAVOC","HAWK","HAY","HAZE","HAZEL","HAZY","HEAD","HEADY","HEAL","HEAP","HEAR","HEARD","HEART","HEAT","HEATH","HEAVE","HEAVY","HEDGE","HEED","HEEL","HEFT","HEFTY","HEIR","HEIST","HELD","HELIX","HELL","HELLO","HELM","HELP","HEMP","HEN","HENCE","HENNA","HER","HERB","HERD","HERE","HERO","HERON","HERS","HERTZ","HEWN","HICK","HID","HIDE","HIGH","HIKE","HIKER","HILL","HILLY","HILT","HIM","HIND","HINGE","HINT","HIP","HIPPO","HIPPY","HIRE","HIS","HISS","HIT","HITCH","HIVE","HOARD","HOAX","HOBBY","HOBO","HOCK","HOG","HOIST","HOKEY","HOLD","HOLE","HOLLY","HOLY","HOME","HOMEY","HONE","HONEY","HONK","HONOR","HOOD","HOOF","HOOK","HOOP","HOOT","HOP","HOPE","HORDE","HORN","HORSE","HOSE","HOST","HOT","HOTEL","HOUND","HOUR","HOUSE","HOVER","HOW","HOWDY","HOWL","HOYA","HUB","HUBBY","HUCK","HUFF","HUG","HUGE","HULA","HULK","HULL","HUM","HUMAN","HUMID","HUMOR","HUMP","HUNCH","HUNG","HUNK","HUNT","HURL","HURRY","HURT","HUSH","HUSK","HUSKY","HUT","HUTCH","HYDRA","HYENA","HYMN","HYPE","HYPO","IBIS","ICE","ICON","ICY","IDEA","IDEAL","IDIOM","IDIOT","IDLE","IDOL","IGLOO","ILL","IMAGE","IMAM","IMPLY","INANE","INCH","INCUR","INDEX","INDIE","INEPT","INERT","INFER","INK","INKY","INLAY","INLET","INN","INNER","INPUT","INSET","INTER","INTO","INTRO","ION","IONIC","IOTA","IRATE","IRIS","IRON","IRONY","ISLE","ISLET","ISSUE","ITCH","ITCHY","ITEM","ITS","IVORY","IVY","JACK","JADE","JAIL","JAM","JAR","JAUNT","JAVA","JAW","JAZZ","JAZZY","JEAN","JEANS","JEEP","JELL","JELLY","JERK","JERKY","JEST","JET","JETTY","JEWEL","JIFFY","JIHAD","JINX","JIVE","JOB","JOIN","JOINT","JOKE","JOKER","JOLLY","JOLT","JOY","JUDGE","JUDO","JUICE","JUICY","JUJU","JUKE","JUMBO","JUMP","JUMPY","JUNK","JUNTA","JUROR","JURY","JUST","JUTE","KALE","KAPPA","KARAT","KARMA","KAYAK","KEBAB","KEEL","KEEN","KEEP","KELP","KEPT","KERB","KEY","KHAKI","KHAN","KICK","KID","KILL","KILN","KILO","KILT","KIN","KIND","KING","KINK","KINKY","KINO","KIOSK","KISS","KIT","KITE","KITTY","KIWI","KNACK","KNAVE","KNEAD","KNEE","KNEEL","KNELL","KNELT","KNEW","KNIFE","KNIT","KNOB","KNOCK","KNOLL","KNOT","KNOW","KNOWN","KOALA","KOBO","KOHL","KOLA","KOOK","KRILL","KRIS","KUDOS","LAB","LABEL","LABOR","LACE","LACK","LACY","LAD","LADEN","LADLE","LADY","LAG","LAGER","LAID","LAIN","LAIR","LAIRD","LAITY","LAKE","LAKH","LAMA","LAMB","LAME","LAMP","LANCE","LAND","LANE","LANKY","LAP","LAPEL","LAPSE","LARCH","LARD","LARGE","LARK","LARVA","LASER","LASH","LASS","LASSO","LAST","LATCH","LATE","LATEX","LATHE","LATTE","LAUD","LAUGH","LAVA","LAVER","LAW","LAWN","LAX","LAY","LAYER","LAYUP","LAZY","LEACH","LEAD","LEAF","LEAFY","LEAK","LEAKY","LEAN","LEAP","LEARN","LEASE","LEASH","LEAVE","LED","LEDGE","LEECH","LEEK","LEER","LEERY","LEFT","LEG","LEGAL","LEGER","LEMMA","LEMON","LEMUR","LEND","LENS","LENT","LEONE","LEPER","LET","LEVEE","LEVEL","LEVER","LEVY","LEWD","LIANA","LIAR","LIBEL","LICE","LICK","LID","LIDAR","LIDO","LIE","LIED","LIEGE","LIEN","LIEU","LIFE","LIFT","LIGHT","LIKE","LIKEN","LILAC","LILY","LIMB","LIMBO","LIME","LIMIT","LIMO","LIMP","LINE","LINEN","LINER","LING","LINGO","LINK","LINO","LINT","LION","LIP","LIPID","LIRA","LISLE","LISP","LIST","LIT","LITE","LITER","LITRE","LIVE","LIVEN","LIVER","LIVID","LLAMA","LOAD","LOAF","LOAM","LOAN","LOATH","LOBBY","LOBE","LOCAL","LOCH","LOCK","LOCUM","LOCUS","LODE","LODGE","LOFT","LOFTY","LOG","LOGIC","LOGO","LOIN","LOLLY","LONE","LONER","LONG","LOOK","LOOM","LOON","LOONY","LOOP","LOOPY","LOOSE","LOOT","LOPE","LORD","LORE","LORRY","LOSE","LOSER","LOSS","LOST","LOT","LOTTO","LOTUS","LOUD","LOUGH","LOUSE","LOUSY","LOVE","LOVER","LOW","LOWER","LOWLY","LOYAL","LUCID","LUCK","LUCKY","LUGE","LULL","LUMEN","LUMP","LUMPY","LUNAR","LUNCH","LUNG","LUNGE","LUPIN","LUPUS","LURCH","LURE","LURID","LURK","LUSH","LUST","LUSTY","LUTE","LYMPH","LYNX","LYRE","LYRIC","MACE","MACHO","MACK","MACRO","MAD","MADAM","MADE","MAFIA","MAGIC","MAGMA","MAID","MAIL","MAIM","MAIN","MAIZE","MAJOR","MAKE","MAKER","MALE","MALL","MALT","MAMBA","MAMBO","MAMMY","MAN","MANE","MANGE","MANGO","MANIA","MANIC","MANLY","MANNA","MANOR","MANTA","MANUS","MANY","MAP","MAPLE","MARCH","MARE","MARIA","MARK","MARL","MARRY","MARSH","MART","MASH","MASK","MASON","MASS","MASSE","MAST","MAT","MATCH","MATE","MATER","MATTE","MAUL","MAUVE","MAVEN","MAX","MAXI","MAXIM","MAY","MAYBE","MAYO","MAYOR","MAZE","MEAD","MEAL","MEAN","MEANT","MEAT","MEATY","MEDAL","MEDIC","MEEK","MEET","MELD","MELEE","MELON","MELT","MEMO","MEN","MEND","MENU","MERCY","MERE","MERGE","MERIT","MERRY","MESA","MESH","MESS","MESSY","MET","METAL","METER","METH","METRE","METRO","MEZZO","MICA","MICE","MICRO","MID","MIDGE","MIDI","MIDST","MIGHT","MILD","MILE","MILER","MILK","MILKY","MILL","MILO","MILT","MIME","MIMIC","MINCE","MIND","MINE","MINER","MINI","MINK","MINOR","MINT","MINTY","MINUS","MIRE","MIRTH","MISER","MISO","MISS","MIST","MISTY","MITE","MITRE","MITT","MIX","MIXER","MOAN","MOAT","MOB","MOCHA","MOCK","MODAL","MODE","MODEL","MODEM","MOGUL","MOIST","MOJO","MOLAR","MOLD","MOLDY","MOLE","MOLL","MONEY","MONGO","MONK","MONO","MONTE","MONTH","MOOD","MOODY","MOON","MOOR","MOOSE","MOOT","MOPED","MORAL","MORAY","MOREL","MORN","MORON","MORPH","MOSS","MOSSY","MOTE","MOTEL","MOTH","MOTIF","MOTOR","MOTTO","MOULD","MOUND","MOUNT","MOURN","MOUSE","MOUTH","MOVE","MOVER","MOVIE","MOWER","MOXIE","MUCH","MUCK","MUCUS","MUD","MUDDY","MUFF","MUFTI","MUG","MUGGY","MULCH","MULE","MULL","MUMPS","MUNCH","MURAL","MURKY","MUSE","MUSH","MUSHY","MUSIC","MUSK","MUST","MUSTY","MUTE","MUTT","MYRRH","MYTH","NAAN","NACHO","NADIR","NAIL","NAIRA","NAIVE","NAKED","NAME","NANNY","NAP","NAPE","NAPPY","NARY","NASAL","NASTY","NATAL","NATTY","NAVAL","NAVE","NAVEL","NAVY","NEAR","NEAT","NECK","NEED","NEEDY","NEON","NERD","NERVE","NESS","NEST","NET","NEVE","NEVER","NEW","NEWS","NEWT","NEXT","NEXUS","NICE","NICHE","NIECE","NIFTY","NIGHT","NINE","NINJA","NINTH","NOBLE","NOD","NODE","NOISE","NOISY","NOMA","NOMAD","NONE","NOOK","NOON","NOOSE","NOR","NORM","NORTH","NOSE","NOSEY","NOSY","NOT","NOTCH","NOTE","NOUN","NOUS","NOVA","NOVEL","NOW","NUDE","NUDGE","NUKE","NULL","NUMB","NUN","NURSE","NUT","NUTTY","NYLON","NYMPH","OAK","OASIS","OATH","OBESE","OBEY","OBOE","OCCUR","OCEAN","OCHRE","ODD","ODDS","ODOR","ODOUR","OFF","OFFAL","OFFER","OFTEN","OGLE","OGRE","OIL","OILY","OKAY","OKRA","OLD","OLDEN","OLDER","OLDIE","OLIVE","OMEGA","OMEN","OMIT","ONCE","ONE","ONION","ONLY","ONSET","ONTO","ONUS","ONYX","OOZE","OPAL","OPEN","OPERA","OPIUM","OPT","OPTIC","OPUS","ORAL","ORANG","ORBIT","ORCA","ORDER","ORE","ORGAN","ORYX","OTHER","OTTER","OUNCE","OUR","OURS","OUST","OUT","OUTDO","OUTER","OVAL","OVARY","OVATE","OVEN","OVER","OVERT","OWE","OWL","OWN","OWNER","OXEN","OXIDE","OZONE","PACE","PACER","PACK","PACT","PAD","PADDY","PADRE","PAGAN","PAGE","PAGER","PAID","PAIL","PAIN","PAINT","PAIR","PAL","PALE","PALL","PALM","PALSY","PAN","PANDA","PANE","PANEL","PANG","PANIC","PANSY","PANT","PANTS","PAPAL","PAPER","PAR","PARA","PARE","PARK","PARKA","PARRY","PARSE","PART","PARTY","PASHA","PASS","PASSE","PAST","PASTA","PASTE","PASTY","PAT","PATCH","PATE","PATER","PATH","PATIO","PATSY","PATTY","PAUSE","PAVE","PAWN","PAY","PAYER","PEA","PEACE","PEACH","PEAK","PEAR","PEARL","PEAT","PECAN","PECK","PECS","PEDAL","PEEK","PEEL","PEEP","PEER","PEEVE","PELT","PEN","PENAL","PENNY","PENT","PEONY","PEP","PEPPY","PER","PERCH","PERIL","PERK","PERKY","PERM","PERT","PESKY","PESO","PEST","PESTO","PET","PETAL","PETTY","PHAGE","PHASE","PHONE","PHONY","PHOTO","PIANO","PICA","PICK","PICKY","PIE","PIECE","PIED","PIER","PIETY","PIG","PIGGY","PIKA","PIKE","PILE","PILL","PILOT","PIN","PINCH","PINE","PING","PINK","PINKY","PINT","PINTO","PIOUS","PIPE","PIPER","PIQUE","PIT","PITA","PITCH","PITHY","PITY","PIVOT","PIXEL","PIXIE","PIZZA","PLACE","PLAID","PLAIN","PLAN","PLANE","PLANK","PLANT","PLAT","PLATE","PLAY","PLAZA","PLEA","PLEAD","PLOP","PLOT","PLOW","PLOY","PLUCK","PLUG","PLUM","PLUMB","PLUME","PLUMP","PLUS","PLUSH","POACH","POD","POEM","POET","POINT","POISE","POKE","POKER","POKEY","POLAR","POLE","POLIO","POLKA","POLL","POLO","POMP","PONCE","POND","PONG","PONS","PONY","POOCH","POOF","POOL","POON","POOP","POOR","POP","POPE","POPPY","PORCH","PORE","PORK","PORT","POSE","POSER","POSH","POSIT","POSSE","POST","POT","POTTY","POUCH","POUND","POUR","POUT","POWER","PRAM","PRANK","PRAT","PRAWN","PRAY","PREP","PRESS","PREY","PRICE","PRICK","PRIDE","PRIM","PRIME","PRINT","PRION","PRIOR","PRISM","PRIVY","PRIZE","PROBE","PROD","PROF","PROM","PROMO","PRONE","PRONG","PROOF","PROP","PROSE","PROUD","PROVE","PROWL","PROXY","PRUDE","PRUNE","PSALM","PUB","PUCK","PUFF","PUFFY","PULL","PULP","PULSE","PUMA","PUMP","PUN","PUNCH","PUNK","PUNT","PUNY","PUP","PUPA","PUPIL","PUPPY","PURE","PUREE","PURGE","PURR","PURSE","PUSH","PUSHY","PUT","PUTT","PUTTY","PYGMY","PYLON","PYRE","QUACK","QUAD","QUAIL","QUAKE","QUARK","QUART","QUASH","QUASI","QUAY","QUEEN","QUEER","QUELL","QUERY","QUEST","QUEUE","QUICK","QUID","QUIET","QUILL","QUILT","QUINT","QUIP","QUIRK","QUIT","QUITE","QUIZ","QUOTA","QUOTE","RABBI","RABID","RACE","RACER","RACK","RACY","RADAR","RADIO","RADON","RAFT","RAG","RAGE","RAID","RAIL","RAIN","RAINY","RAISE","RAJA","RAJAH","RAKE","RALLY","RAM","RAMP","RAN","RANCH","RAND","RANG","RANGE","RANK","RANT","RAP","RAPID","RAPT","RARE","RASH","RASPY","RAT","RATE","RATIO","RAVE","RAVEL","RAVEN","RAW","RAY","RAYON","RAZE","RAZOR","REACH","REACT","READ","READY","REAL","REALM","REAP","REAR","REBEL","REBUS","REBUT","RECAP","RECUR","RED","REDO","REDOX","REDUX","REED","REEDY","REEF","REEK","REEL","REFER","REFIT","REGAL","REIGN","REIN","RELAX","RELAY","RELIC","RELY","REMIT","RENAL","RENEW","RENT","REPAY","REPEL","REPLY","RERUN","RESET","RESIN","REST","RETRO","RETRY","REUSE","REVEL","REVUE","RHEA","RHINO","RHYME","RIB","RICE","RICH","RID","RIDE","RIDER","RIDGE","RIFE","RIFF","RIFLE","RIFT","RIG","RIGHT","RIGID","RIGOR","RIM","RIME","RIND","RING","RINK","RINSE","RIOT","RIP","RIPE","RIPEN","RISE","RISEN","RISER","RISK","RISKY","RITE","RIVAL","RIVER","RIVET","ROACH","ROAD","ROAM","ROAN","ROAR","ROAST","ROB","ROBE","ROBIN","ROBOT","ROCK","ROCKY","ROD","RODE","RODEO","ROGUE","ROLE","ROLL","ROMAN","ROMP","RONDO","ROOD","ROOF","ROOK","ROOM","ROOMY","ROOST","ROOT","ROPE","ROPER","ROSE","ROSIN","ROSY","ROT","ROTA","ROTE","ROTOR","ROUGE","ROUGH","ROUND","ROUSE","ROUT","ROUTE","ROVE","ROVER","ROW","ROWAN","ROWDY","ROWER","ROYAL","RUB","RUBE","RUBLE","RUBY","RUCK","RUDDY","RUDE","RUE","RUFF","RUG","RUGBY","RUIN","RULE","RULER","RUM","RUMBA","RUMOR","RUMP","RUN","RUNE","RUNG","RUNNY","RUPEE","RURAL","RUSE","RUSH","RUSK","RUST","RUSTY","RUTH","RYE","SABER","SABLE","SABRA","SABRE","SACK","SAD","SAFE","SAGA","SAGE","SAID","SAIL","SAINT","SAKE","SAKI","SALAD","SALE","SALON","SALSA","SALT","SALTY","SALVE","SALVO","SAMBA","SAME","SAND","SANDY","SANE","SANG","SANK","SAP","SAPPY","SAREE","SARI","SARIN","SASH","SASS","SASSY","SAT","SATE","SATIN","SAUCE","SAUCY","SAUNA","SAVE","SAVER","SAVIN","SAVOR","SAVOY","SAVVY","SAW","SAY","SCAB","SCALE","SCALP","SCALY","SCAM","SCAN","SCANT","SCAPE","SCAR","SCARE","SCARF","SCARY","SCAT","SCENE","SCENT","SCION","SCOFF","SCOLD","SCONE","SCOOP","SCOOT","SCOPE","SCORE","SCORN","SCOUR","SCOUT","SCOWL","SCRAP","SCREW","SCRIM","SCRIP","SCRUB","SCRUM","SCUBA","SCUM","SEA","SEAL","SEAM","SEAR","SEAT","SECT","SEDAN","SEE","SEED","SEEDY","SEEK","SEEM","SEEN","SEEP","SEER","SEGUE","SEIZE","SELF","SELL","SEMI","SEND","SENSE","SENT","SEPIA","SERGE","SERIF","SERUM","SERVE","SERVO","SET","SETUP","SEVEN","SEVER","SEWER","SEWN","SEX","SEXY","SHACK","SHAD","SHADE","SHADY","SHAFT","SHAG","SHAKE","SHAKY","SHALE","SHALL","SHAM","SHAME","SHANK","SHAPE","SHARD","SHARE","SHARK","SHARP","SHAVE","SHAWL","SHE","SHEAF","SHEAR","SHED","SHEEN","SHEEP","SHEER","SHEET","SHEIK","SHELF","SHELL","SHIFT","SHILL","SHIM","SHIN","SHINE","SHINY","SHIP","SHIRE","SHIRK","SHIRT","SHOAL","SHOCK","SHOE","SHONE","SHOO","SHOOK","SHOOT","SHOP","SHORE","SHORN","SHORT","SHOT","SHOUT","SHOVE","SHOW","SHOWN","SHOWY","SHRED","SHREW","SHRUB","SHRUG","SHUN","SHUNT","SHUSH","SHUT","SHY","SICK","SIDE","SIEGE","SIEVE","SIFT","SIGH","SIGHT","SIGMA","SIGN","SILK","SILKY","SILL","SILLY","SILO","SILT","SILVA","SIN","SINCE","SINE","SING","SINK","SINUS","SIP","SIR","SIRE","SIREN","SIT","SITE","SIX","SIXTH","SIXTY","SIZE","SKATE","SKEET","SKEW","SKI","SKID","SKIER","SKIFF","SKILL","SKIM","SKIMP","SKIN","SKIP","SKIRT","SKIT","SKULL","SKUNK","SKY","SLAB","SLACK","SLAG","SLAIN","SLAM","SLANG","SLANT","SLAP","SLASH","SLATE","SLAVE","SLAW","SLAY","SLED","SLEEK","SLEEP","SLEET","SLEPT","SLEW","SLICE","SLICK","SLID","SLIDE","SLIM","SLIME","SLIMY","SLING","SLIP","SLIT","SLOB","SLOG","SLOOP","SLOP","SLOPE","SLOT","SLOTH","SLOW","SLUG","SLUM","SLUMP","SLUNG","SLUR","SLURP","SLUSH","SMACK","SMALL","SMART","SMASH","SMEAR","SMELL","SMELT","SMILE","SMIRK","SMITE","SMITH","SMOCK","SMOG","SMOKE","SMOKY","SMUG","SNACK","SNAFU","SNAG","SNAIL","SNAKE","SNAP","SNARE","SNARL","SNEAK","SNEER","SNIDE","SNIFF","SNIP","SNIPE","SNOB","SNOOP","SNORE","SNORT","SNOUT","SNOW","SNOWY","SNUB","SNUFF","SNUG","SOAK","SOAP","SOAPY","SOAR","SOBER","SOCK","SODA","SOFA","SOFT","SOGGY","SOIL","SOLAR","SOLD","SOLE","SOLID","SOLO","SOLVE","SOME","SON","SONAR","SONE","SONG","SONIC","SOON","SOOT","SOOTY","SORE","SORRY","SORT","SOUL","SOUND","SOUP","SOUR","SOUTH","SOWN","SOY","SOYA","SPA","SPACE","SPADE","SPAN","SPANK","SPAR","SPARE","SPARK","SPASM","SPAT","SPATE","SPAWN","SPEAK","SPEAR","SPEC","SPECK","SPED","SPEED","SPELL","SPELT","SPEND","SPENT","SPERM","SPEW","SPICE","SPICY","SPIEL","SPIKE","SPIKY","SPILL","SPILT","SPIN","SPINE","SPINY","SPIRE","SPIT","SPITE","SPITZ","SPLAT","SPLIT","SPOIL","SPOKE","SPOOF","SPOOK","SPOOL","SPOON","SPORE","SPORT","SPOT","SPOUT","SPRAY","SPREE","SPRY","SPUD","SPUN","SPUR","SPURT","SPY","SQUAD","SQUAT","SQUID","STAB","STACK","STAFF","STAG","STAGE","STAID","STAIN","STAIR","STAKE","STALE","STALK","STALL","STAMP","STAND","STANK","STAPH","STAR","STARE","STARK","START","STASH","STATE","STAVE","STAY","STEAD","STEAK","STEAL","STEAM","STEED","STEEL","STEEP","STEER","STEM","STEP","STERN","STEW","STICK","STIFF","STILL","STING","STINK","STINT","STIPE","STIR","STOCK","STOIC","STOKE","STOLE","STOMP","STONE","STONY","STOOD","STOOL","STOOP","STOP","STORE","STORK","STORM","STORY","STOUT","STOVE","STOW","STRAP","STRAW","STRAY","STREP","STRIP","STRUT","STUB","STUCK","STUD","STUDY","STUFF","STUMP","STUN","STUNG","STUNT","STYLE","SUAVE","SUB","SUCH","SUDS","SUE","SUEDE","SUGAR","SUIT","SUITE","SULK","SULLY","SUM","SUMO","SUMP","SUN","SUNG","SUNK","SUNNY","SUPER","SURA","SURE","SURF","SURGE","SURLY","SUSHI","SUTRA","SWAB","SWAG","SWAM","SWAMI","SWAMP","SWAN","SWANK","SWAP","SWARM","SWAT","SWATH","SWAY","SWEAR","SWEAT","SWEDE","SWEEP","SWEET","SWELL","SWEPT","SWIFT","SWIG","SWIM","SWINE","SWING","SWIPE","SWIRL","SWISH","SWOON","SWOOP","SWORD","SWORN","SWOT","SWUNG","SYNC","SYNOD","SYRUP","TAB","TABBY","TABLE","TABOO","TACIT","TACK","TACKY","TACO","TACT","TAFFY","TAG","TAIL","TAINT","TAKA","TAKE","TAKEN","TAKER","TALC","TALE","TALK","TALL","TALLY","TALON","TAME","TAMER","TAN","TANG","TANGO","TANGY","TANK","TAP","TAPE","TAPER","TAR","TARDY","TARN","TARO","TAROT","TARP","TART","TASK","TASTE","TASTY","TATER","TAUNT","TAUPE","TAUT","TAWNY","TAX","TAXI","TAXON","TEA","TEACH","TEAK","TEAL","TEAM","TEAR","TEARY","TEASE","TEDDY","TEEN","TEENY","TEETH","TELL","TEMPO","TEMPT","TEN","TEND","TENET","TENOR","TENSE","TENT","TENTH","TEPID","TERM","TERN","TERSE","TESLA","TEST","TESTA","TESTY","TETRA","TEXT","THAN","THANE","THANK","THAT","THAW","THE","THEFT","THEIR","THEM","THEME","THEN","THERE","THESE","THETA","THEY","THICK","THIEF","THIGH","THIN","THING","THINK","THIRD","THIS","THONG","THORN","THOSE","THREE","THREW","THROB","THROW","THUD","THUG","THUMB","THUMP","THUS","THYME","TIARA","TIBIA","TICK","TIDAL","TIDE","TIDY","TIE","TIER","TIFF","TIGER","TIGHT","TILE","TILL","TILT","TIME","TIMER","TIMID","TIN","TINE","TINGE","TINT","TINY","TIP","TIPSY","TIRE","TITAN","TITHE","TITLE","TOAD","TOAST","TOBY","TODAY","TOE","TOFU","TOGA","TOIL","TOKEN","TOLD","TOLL","TOMB","TOME","TON","TONAL","TONE","TONER","TONGS","TONIC","TONNE","TOO","TOOK","TOOL","TOON","TOOT","TOOTH","TOP","TOPAZ","TOPIC","TORCH","TORE","TORN","TORSO","TORT","TORUS","TOSH","TOSS","TOTAL","TOTE","TOTEM","TOUCH","TOUGH","TOUR","TOUT","TOW","TOWEL","TOWER","TOWN","TOXIC","TOXIN","TOY","TRACE","TRACK","TRACT","TRADE","TRAIL","TRAIN","TRAIT","TRAM","TRAMP","TRAP","TRASH","TRAWL","TRAY","TREAD","TREAT","TREE","TREK","TREND","TREY","TRIAD","TRIAL","TRIBE","TRICK","TRIER","TRIG","TRILL","TRIM","TRIO","TRIP","TRIPE","TRITE","TROLL","TROOP","TROPE","TROT","TROUT","TROVE","TROY","TRUCE","TRUCK","TRUE","TRUMP","TRUNK","TRUSS","TRUST","TRUTH","TRY","TRYST","TSAR","TUB","TUBA","TUBAL","TUBBY","TUBE","TUBER","TUCK","TUFT","TUG","TULIP","TULLE","TUMMY","TUMOR","TUNA","TUNE","TUNER","TUNIC","TURF","TURN","TUSK","TUTOR","TUTU","TWANG","TWEAK","TWEED","TWEET","TWICE","TWIG","TWILL","TWIN","TWINE","TWIRL","TWIST","TWIT","TWO","TYPE","TYPO","TYRE","UGLY","ULCER","ULTRA","UNCLE","UNCUT","UNDER","UNDO","UNDUE","UNFIT","UNIFY","UNION","UNIT","UNITE","UNITY","UNTIE","UNTIL","UNWED","UNZIP","UPON","UPPER","UPSET","URBAN","UREA","URGE","URIC","URINE","USAGE","USE","USER","USHER","USUAL","USURP","USURY","UTTER","VAGUE","VAIN","VALE","VALET","VALID","VALOR","VALUE","VALVE","VAMP","VAN","VANE","VAPID","VAPOR","VARY","VASE","VAST","VAT","VAULT","VEAL","VEER","VEGAN","VEIL","VEIN","VENOM","VENT","VENUE","VERB","VERGE","VERSE","VERSO","VERVE","VERY","VEST","VET","VETO","VIA","VIAL","VIBE","VICAR","VICE","VIDEO","VIEW","VIGIL","VIGOR","VILE","VILLA","VINE","VINYL","VIOLA","VIPER","VIRAL","VIRUS","VISA","VISE","VISIT","VISOR","VISTA","VITAL","VIVID","VIXEN","VOCAL","VODKA","VOGUE","VOICE","VOID","VOLE","VOLT","VOMIT","VOTE","VOTER","VOUCH","VOW","VOWEL","WACKY","WADE","WADI","WAFER","WAGE","WAGER","WAGON","WAIL","WAIST","WAIT","WAIVE","WAKE","WALE","WALK","WALL","WALLY","WALTZ","WAND","WANE","WANT","WAR","WARD","WARE","WARM","WARN","WARP","WART","WARY","WAS","WASH","WASHY","WASP","WASTE","WATCH","WATER","WATT","WAVE","WAVER","WAVY","WAX","WAXY","WAY","WEAK","WEAN","WEAR","WEARY","WEAVE","WEB","WED","WEDGE","WEED","WEEK","WEEP","WEIGH","WEIR","WEIRD","WELD","WELL","WELT","WENT","WEPT","WERE","WEST","WET","WHACK","WHALE","WHAM","WHARF","WHAT","WHEAT","WHEEL","WHEN","WHERE","WHET","WHEY","WHICH","WHIFF","WHILE","WHIM","WHINE","WHINY","WHIP","WHIRL","WHISK","WHIT","WHITE","WHIZ","WHOLE","WHOM","WHOOP","WHORL","WHOSE","WHY","WICK","WIDE","WIDEN","WIDOW","WIDTH","WIELD","WIFE","WIG","WILD","WILE","WILL","WILT","WILY","WIMP","WIMPY","WIN","WINCE","WINCH","WIND","WINDY","WINE","WING","WINK","WIPE","WIPER","WIRE","WIRY","WISE","WISH","WISP","WIT","WITCH","WITH","WITTY","WOKE","WOLD","WOLF","WOMAN","WOMB","WOMEN","WON","WONKY","WONT","WOO","WOOD","WOODY","WOOL","WORD","WORDY","WORE","WORK","WORLD","WORM","WORN","WORRY","WORT","WORTH","WOUND","WOVE","WOVEN","WRAP","WRATH","WREAK","WRECK","WREN","WREST","WRING","WRIST","WRIT","WRITE","WRONG","WROTE","XENON","YACHT","YAHOO","YANG","YANK","YARD","YARN","YAWN","YEAR","YEARN","YEAST","YELL","YELP","YEN","YES","YET","YETI","YIELD","YOGA","YOGI","YOKE","YOLK","YOU","YOUNG","YOUR","YOUTH","YUAN","YUCCA","YUMMY","ZANY","ZEAL","ZEBRA","ZERO","ZEST","ZETA","ZINC","ZING","ZIP","ZIPPY","ZONAL","ZONE","ZOO","ZOOM"],"puzzles":[{"s":"YET","t":"SAY","p":["SET","SAT"]},{"s":"BLOW","t":"FEED","p":["FLOW","FLEW","FLED"]},{"s":"SAW","t":"BED","p":["SAD","BAD"]},{"s":"BUSH","t":"CANT","p":["BASH","CASH","CAST"]},{"s":"CAPE","t":"FORM","p":["CARE","FARE","FARM"]},{"s":"THE","t":"NOW","p":["TOE","TOW"]},{"s":"MEAT","t":"BOOK","p":["BEAT","BOAT","BOOT"]},{"s":"BACK","t":"SING","p":["BANK","BANG","SANG"]},{"s":"MOVE","t":"WILL","p":["MOLE","MILE","MILL"]},{"s":"STORM","t":"PLATE","p":["STORE","STARE","STATE","SLATE"]},{"s":"SLIDE","t":"CHECK","p":["SLICE","SLICK","CLICK","CHICK"]},{"s":"BAR","t":"PUT","p":["BAT","BUT"]},{"s":"CORE","t":"HALL","p":["CARE","HARE","HALE"]},{"s":"GAS","t":"TIP","p":["GAP","TAP"]},{"s":"CREEK","t":"BLIND","p":["CREED","BREED","BLEED","BLEND"]},{"s":"FACT","t":"MODE","p":["FACE","FADE","MADE"]},{"s":"CORE","t":"SAND","p":["CARE","CANE","SANE"]},{"s":"FINE","t":"WORD","p":["WINE","WIRE","WORE"]},{"s":"PUT","t":"SAY","p":["PAT","SAT"]},{"s":"BUS","t":"LET","p":["BUT","BET"]},{"s":"BLOCK","t":"START","p":["BLACK","SLACK","STACK","STARK"]},{"s":"TAX","t":"COP","p":["TAP","CAP"]},{"s":"FOOD","t":"WINE","p":["FOND","FIND","WIND"]},{"s":"START","t":"CLICK","p":["STARK","STACK","SLACK","SLICK"]},{"s":"WHITE","t":"SMALL","p":["WHILE","WHALE","SHALE","SHALL"]},{"s":"RICE","t":"COPY","p":["RIPE","ROPE","COPE"]},{"s":"WARD","t":"CENT","p":["CARD","CART","CANT"]},{"s":"TEN","t":"POT","p":["PEN","PET"]},{"s":"LATE","t":"PICK","p":["LACE","PACE","PACK"]},{"s":"BAT","t":"PEN","p":["BET","PET"]},{"s":"SMALL","t":"WHOSE","p":["SHALL","SHALE","WHALE","WHOLE"]},{"s":"SIN","t":"BAD","p":["BIN","BAN"]},{"s":"COP","t":"GAY","p":["CAP","GAP"]},{"s":"LIFE","t":"MUST","p":["LIFT","LIST","LUST"]},{"s":"RID","t":"POT","p":["ROD","POD"]},{"s":"PAY","t":"YET","p":["PAT","PET"]},{"s":"FORD","t":"TELL","p":["FOLD","TOLD","TOLL"]},{"s":"FUND","t":"POOL","p":["FOND","FOOD","FOOL"]},{"s":"KID","t":"PEN","p":["KIN","PIN"]},{"s":"SPOKE","t":"CLICK","p":["SPIKE","SPICE","SLICE","SLICK"]},{"s":"PUT","t":"HOP","p":["POT","HOT"]},{"s":"CALL","t":"FIRE","p":["FALL","FILL","FILE"]},{"s":"HAIR","t":"REAL","p":["HEIR","HEAR","REAR"]},{"s":"RISE","t":"DATA","p":["RITE","RATE","DATE"]},{"s":"BAN","t":"RID","p":["BAD","BID"]},{"s":"AID","t":"BAR","p":["BID","BAD"]},{"s":"SEED","t":"CANT","p":["SEND","SENT","CENT"]},{"s":"LINE","t":"BOSS","p":["LONE","LOSE","LOSS"]},{"s":"FIT","t":"MAY","p":["FAT","MAT"]},{"s":"COLD","t":"WARM","p":["CORD","WORD","WARD"]},{"s":"BELL","t":"MAIN","p":["BALL","MALL","MAIL"]},{"s":"ZONE","t":"LIFT","p":["LONE","LINE","LIFE"]},{"s":"DEAR","t":"HALL","p":["HEAR","HEAL","HELL"]},{"s":"HARM","t":"CUTE","p":["HARE","CARE","CURE"]},{"s":"ALONG","t":"CHASE","p":["ALONE","CLONE","CLOSE","CHOSE"]},{"s":"CRACK","t":"THING","p":["TRACK","TRICK","THICK","THINK"]},{"s":"WILD","t":"TAIL","p":["WILL","TILL","TALL"]},{"s":"BRAVE","t":"THICK","p":["BRACE","TRACE","TRACK","TRICK"]},{"s":"MEET","t":"BULL","p":["MELT","BELT","BELL"]},{"s":"MAX","t":"WET","p":["MAT","MET"]},{"s":"DRY","t":"TOP","p":["TRY","TOY"]},{"s":"HIM","t":"ART","p":["AIM","ARM"]},{"s":"LOST","t":"CARD","p":["COST","CAST","CART"]},{"s":"RAW","t":"SKY","p":["SAW","SAY"]},{"s":"WAKE","t":"SORT","p":["WOKE","WORE","SORE"]},{"s":"FACT","t":"COME","p":["FACE","FAME","CAME"]},{"s":"HEAD","t":"TAIL","p":["HELD","HELL","TELL","TALL"]},{"s":"MAX","t":"TEN","p":["MAN","MEN"]},{"s":"PLANE","t":"BENCH","p":["PLACE","PEACE","PEACH","BEACH"]},{"s":"COPY","t":"SAFE","p":["COPE","CAPE","CAFE"]},{"s":"FORD","t":"MINE","p":["FOND","FIND","MIND"]},{"s":"NAME","t":"CENT","p":["CAME","CANE","CANT"]},{"s":"THAT","t":"COOL","p":["CHAT","COAT","COAL"]},{"s":"BAY","t":"SIT","p":["SAY","SAT"]},{"s":"HIM","t":"CAT","p":["HIT","HAT"]},{"s":"SHE","t":"BET","p":["SEE","SET"]},{"s":"ELSE","t":"CAMP","p":["EASE","CASE","CAME"]},{"s":"RED","t":"BAN","p":["BED","BAD"]},{"s":"STORE","t":"BLACK","p":["STARE","STARK","STACK","SLACK"]},{"s":"CAT","t":"PER","p":["PAT","PET"]},{"s":"BED","t":"PAN","p":["BAD","BAN"]},{"s":"BUT","t":"AID","p":["BIT","BID"]},{"s":"SCARY","t":"WHILE","p":["SCARE","SHARE","SHALE","WHALE"]},{"s":"HERE","t":"CANT","p":["HARE","CARE","CANE"]},{"s":"WILL","t":"MOOD","p":["MILL","MILD","MOLD"]},{"s":"START","t":"WHOLE","p":["STARE","SHARE","SHALE","WHALE"]},{"s":"CORE","t":"MASK","p":["CARE","MARE","MARK"]},{"s":"CODE","t":"HARD","p":["CORE","CARE","CARD"]},{"s":"CURE","t":"BALL","p":["CARE","BARE","BALE"]},{"s":"LAY","t":"RUN","p":["RAY","RAN"]},{"s":"BET","t":"LAY","p":["BAT","BAY"]},{"s":"HOLD","t":"REAR","p":["HELD","HEAD","READ"]},{"s":"TALK","t":"DEAL","p":["TALL","TELL","DELL"]},{"s":"HERO","t":"SALE","p":["HERE","HARE","HALE"]},{"s":"TEXT","t":"LAND","p":["TENT","TEND","LEND"]},{"s":"DARE","t":"MILK","p":["DALE","MALE","MILE"]},{"s":"MATE","t":"FELL","p":["MALE","MALL","FALL"]},{"s":"HERE","t":"COLD","p":["HERD","HELD","HOLD"]},{"s":"BANK","t":"REST","p":["RANK","RANT","RENT"]},{"s":"PLATE","t":"STORY","p":["SLATE","STATE","STARE","STORE"]},{"s":"BOTH","t":"PASS","p":["BATH","BASH","BASS"]},{"s":"WALK","t":"TIME","p":["TALK","TALE","TILE"]},{"s":"GRACE","t":"THINK","p":["TRACE","TRACK","TRICK","THICK"]},{"s":"GRAVE","t":"THICK","p":["GRACE","TRACE","TRACK","TRICK"]},{"s":"BELT","t":"ROOM","p":["BOLT","BOOT","ROOT"]},{"s":"CARD","t":"TYPE","p":["CARE","CAPE","TAPE"]},{"s":"CUP","t":"FAR","p":["CAP","CAR"]},{"s":"BAN","t":"GET","p":["BAT","BET"]},{"s":"NOW","t":"OUT","p":["NOT","NUT"]},{"s":"THICK","t":"GRADE","p":["TRICK","TRACK","TRACE","GRACE"]},{"s":"TEN","t":"BAY","p":["TAN","BAN"]},{"s":"FORM","t":"HIDE","p":["FIRM","FIRE","HIRE"]},{"s":"NICE","t":"DAMN","p":["DICE","DIME","DAME"]},{"s":"PAST","t":"NEAR","p":["PEST","NEST","NEAT"]},{"s":"PET","t":"WIN","p":["PEN","PIN"]},{"s":"TALK","t":"SEAL","p":["TALL","TELL","SELL"]},{"s":"RIDE","t":"COPY","p":["RODE","CODE","COPE"]},{"s":"WINE","t":"FELL","p":["FINE","FILE","FILL"]},{"s":"LANE","t":"BOSS","p":["LONE","LOSE","LOSS"]},{"s":"SUN","t":"FEE","p":["SUE","SEE"]},{"s":"THANK","t":"PRICE","p":["THINK","THICK","TRICK","PRICK"]},{"s":"FORD","t":"TALL","p":["FOLD","TOLD","TOLL"]},{"s":"POPE","t":"CALM","p":["POLE","PALE","PALM"]},{"s":"THING","t":"CLOCK","p":["THINK","THICK","CHICK","CLICK"]},{"s":"LAST","t":"HOLE","p":["LOST","HOST","HOSE"]},{"s":"FAKE","t":"BURN","p":["FARE","BARE","BARN"]},{"s":"START","t":"WHILE","p":["STARE","SHARE","SHALE","WHALE"]},{"s":"HEAT","t":"LAND","p":["HEAD","LEAD","LEND"]},{"s":"PART","t":"BOSS","p":["PAST","PASS","BASS"]},{"s":"BAT","t":"MID","p":["BAD","MAD"]},{"s":"BURN","t":"PACK","p":["BARN","BARK","PARK"]},{"s":"SNOW","t":"FLAT","p":["SLOW","FLOW","FLAW"]},{"s":"BURN","t":"FATE","p":["BARN","BARE","FARE"]},{"s":"CELL","t":"TIME","p":["TELL","TILL","TILE"]},{"s":"PICK","t":"EAST","p":["PACK","PACT","PAST"]},{"s":"GREEN","t":"BLIND","p":["GREED","BREED","BLEED","BLEND"]},{"s":"ROOM","t":"GIFT","p":["ROOT","RIOT","RIFT"]},{"s":"NOW","t":"TIE","p":["TOW","TOE"]},{"s":"RATE","t":"HOLY","p":["HATE","HALE","HOLE"]},{"s":"HOLE","t":"TAIL","p":["HALE","TALE","TALL"]},{"s":"SCARY","t":"WHOLE","p":["SCARE","SHARE","SHALE","WHALE"]},{"s":"LEG","t":"DAY","p":["LAG","LAY"]},{"s":"CHEAP","t":"TRUST","p":["CHEAT","CHEST","CREST","CRUST"]},{"s":"NEW","t":"HOT","p":["NOW","HOW"]},{"s":"LAW","t":"RID","p":["LAD","LID"]},{"s":"SICK","t":"GANG","p":["SINK","SING","SANG"]},{"s":"RISE","t":"HOLD","p":["ROSE","ROLE","HOLE"]},{"s":"GAY","t":"BED","p":["BAY","BAD"]},{"s":"FIRM","t":"BULL","p":["FILM","FILL","BILL"]},{"s":"MID","t":"GAP","p":["MAD","MAP"]},{"s":"SAY","t":"COP","p":["SAP","CAP"]},{"s":"PLATE","t":"BENCH","p":["PLACE","PEACE","PEACH","BEACH"]},{"s":"POT","t":"BAN","p":["PAT","BAT"]},{"s":"TURN","t":"ZONE","p":["TORN","TORE","TONE"]},{"s":"WRITE","t":"SHALL","p":["WHITE","WHILE","WHALE","SHALE"]},{"s":"SKY","t":"BOX","p":["SOY","BOY"]},{"s":"FAN","t":"BET","p":["BAN","BAT"]},{"s":"NINE","t":"WASH","p":["WINE","WISE","WISH"]},{"s":"TEND","t":"POST","p":["TENT","TEST","PEST"]}],"endless":[{"s":"SHOW","t":"BAND","par":7,"p":["SHOP","SHIP","SLIP","SLID","SAID","SAND"]},{"s":"BITE","t":"VERY","par":7,"p":["RITE","RATE","RARE","WARE","WARY","VARY"]},{"s":"FOOD","t":"PICK","par":6,"p":["HOOD","HOOK","LOOK","LOCK","LICK"]},{"s":"STATE","t":"BRING","par":9,"p":["STARE","STARK","STACK","SLACK","BLACK","BLANK","BLINK","BRINK"]},{"s":"SUN","t":"HOT","par":4,"p":["BUN","BUT","HUT"]},{"s":"FLOOD","t":"THICK","par":8,"p":["BLOOD","BLOND","BLIND","BLINK","BRINK","BRICK","TRICK"]},{"s":"TIME","t":"HELP","par":5,"p":["TILE","TILL","HILL","HELL"]},{"s":"STICK","t":"WHOLE","par":7,"p":["STACK","STARK","SHARK","SHARE","SHALE","WHALE"]},{"s":"WILL","t":"CHIP","par":8,"p":["BILL","BALL","BAIL","BOIL","COIL","COIN","CHIN"]},{"s":"PEN","t":"NOW","par":4,"p":["DEN","DEW","NEW"]},{"s":"CARD","t":"REST","par":5,"p":["CART","PART","PAST","PEST"]},{"s":"COOK","t":"FIVE","par":5,"p":["CORK","FORK","FORE","FIRE"]},{"s":"BRICK","t":"SUITE","par":9,"p":["TRICK","THICK","CHICK","CLICK","SLICK","SLICE","SPICE","SPITE"]},{"s":"BET","t":"AIM","par":4,"p":["BIT","HIT","HIM"]},{"s":"LEFT","t":"BACK","par":6,"p":["LENT","BENT","BEND","BAND","BANK"]},{"s":"VAST","t":"GIVE","par":6,"p":["CAST","CASE","CAVE","HAVE","HIVE"]},{"s":"THIN","t":"NEXT","par":7,"p":["THEN","TEEN","BEEN","BEAN","BEAT","NEAT"]},{"s":"NOR","t":"BAT","par":4,"p":["FOR","FAR","BAR"]},{"s":"POPE","t":"THEM","par":8,"p":["COPE","CORE","CORN","COIN","CHIN","THIN","THEN"]},{"s":"HEAT","t":"CREW","par":7,"p":["FEAT","FLAT","FLAW","FLEW","BLEW","BREW"]},{"s":"BRAND","t":"SHOOT","par":9,"p":["BLAND","BLANK","BLACK","SLACK","STACK","STOCK","SHOCK","SHOOK"]},{"s":"PATH","t":"JAIL","par":7,"p":["BATH","BASH","BASE","BALE","BALL","BAIL"]},{"s":"TRADE","t":"CROWD","par":9,"p":["TRACE","TRACT","TRAIT","TRAIN","DRAIN","DRAWN","DROWN","CROWN"]},{"s":"SKIN","t":"DEAR","par":8,"p":["SHIN","THIN","THEN","TEEN","BEEN","BEAN","DEAN"]},{"s":"FLAG","t":"VERY","par":8,"p":["FLAT","FEAT","HEAT","HEAD","HERD","HERB","VERB"]},{"s":"TOP","t":"MIX","par":4,"p":["TAP","MAP","MAX"]},{"s":"FAIR","t":"SEED","par":6,"p":["PAIR","PAID","SAID","SAND","SEND"]},{"s":"SAFE","t":"JAIL","par":5,"p":["SALE","BALE","BALL","BAIL"]},{"s":"GAY","t":"DOG","par":4,"p":["LAY","LAG","LOG"]},{"s":"WHITE","t":"SHELL","par":5,"p":["WHILE","WHALE","SHALE","SHALL"]},{"s":"DREAM","t":"BRAND","par":7,"p":["DREAD","BREAD","BREED","BLEED","BLEND","BLAND"]},{"s":"FRANK","t":"SLIDE","par":7,"p":["FLANK","BLANK","BLACK","SLACK","SLICK","SLICE"]},{"s":"WAY","t":"SIX","par":4,"p":["MAY","MAX","MIX"]},{"s":"BASE","t":"NEXT","par":5,"p":["VASE","VAST","VEST","NEST"]},{"s":"CREW","t":"FULL","par":8,"p":["BREW","BLEW","FLEW","FLED","FEED","FEEL","FUEL"]},{"s":"SOIL","t":"WAVE","par":6,"p":["SAIL","HAIL","HALL","HALE","HAVE"]},{"s":"HAND","t":"FILL","par":5,"p":["BAND","BALD","BALL","FALL"]},{"s":"GOLD","t":"JAIL","par":5,"p":["BOLD","BALD","BALL","BAIL"]},{"s":"PINK","t":"LOSS","par":5,"p":["LINK","LINE","LONE","LOSE"]},{"s":"TRICK","t":"SPACE","par":7,"p":["THICK","CHICK","CLICK","SLICK","SLICE","SPICE"]},{"s":"WAY","t":"SUB","par":5,"p":["BAY","BUY","BUM","SUM"]},{"s":"TINY","t":"HILL","par":5,"p":["TIDY","TIDE","TILE","TILL"]},{"s":"MODE","t":"DECK","par":7,"p":["RODE","RIDE","RISE","RISK","DISK","DESK"]},{"s":"OUT","t":"JOB","par":5,"p":["BUT","BUY","BOY","JOY"]},{"s":"LINK","t":"VERY","par":7,"p":["WINK","WINE","WIRE","WARE","WARY","VARY"]},{"s":"BANG","t":"FAIR","par":6,"p":["RANG","RAND","RAID","PAID","PAIR"]},{"s":"MAP","t":"EYE","par":6,"p":["CAP","CUP","CUE","DUE","DYE"]},{"s":"POWER","t":"MINOR","par":6,"p":["LOWER","LOVER","LIVER","LINER","MINER"]},{"s":"WISE","t":"TANK","par":5,"p":["WINE","WINK","SINK","SANK"]},{"s":"TALL","t":"KIND","par":5,"p":["BALL","BALD","BAND","BIND"]},{"s":"MINE","t":"DENY","par":6,"p":["MIND","BIND","BEND","BENT","DENT"]},{"s":"HELL","t":"JOKE","par":6,"p":["DELL","DOLL","POLL","POLE","POKE"]},{"s":"PACK","t":"DEAN","par":8,"p":["BACK","BUCK","BULK","BULL","DULL","DELL","DEAL"]},{"s":"TRAIN","t":"STICK","par":9,"p":["TRAIT","TRACT","TRACK","TRICK","THICK","CHICK","CLICK","SLICK"]},{"s":"HARM","t":"GENE","par":6,"p":["FARM","FORM","FORE","GORE","GONE"]},{"s":"MODE","t":"FOUR","par":7,"p":["CODE","COME","COMP","COUP","SOUP","SOUR"]},{"s":"BEER","t":"WISE","par":8,"p":["BEAR","FEAR","FEAT","FIAT","FIST","FISH","WISH"]},{"s":"ACT","t":"PEN","par":6,"p":["APT","OPT","OUT","PUT","PET"]},{"s":"THEN","t":"WEST","par":7,"p":["TEEN","BEEN","BEAN","BEAT","NEAT","NEST"]},{"s":"TYPE","t":"MEAL","par":7,"p":["TAPE","TALE","HALE","HALL","HELL","HEAL"]},{"s":"KIND","t":"ROAD","par":6,"p":["BIND","BEND","LEND","LEAD","READ"]},{"s":"WING","t":"SEEM","par":6,"p":["SING","SANG","SAND","SEND","SEED"]},{"s":"PLATE","t":"LUNCH","par":7,"p":["PLACE","PEACE","PEACH","BEACH","BENCH","BUNCH"]},{"s":"CLOCK","t":"STORM","par":8,"p":["BLOCK","BLACK","SLACK","STACK","STARK","STARE","STORE"]},{"s":"MESS","t":"SAKE","par":5,"p":["MASS","BASS","BASE","BAKE"]},{"s":"GOOD","t":"TIME","par":6,"p":["FOOD","FORD","FORE","TORE","TIRE"]},{"s":"NOT","t":"ART","par":5,"p":["NUT","OUT","OPT","APT"]},{"s":"SAVE","t":"FLOW","par":8,"p":["SANE","SAND","SEND","SEED","FEED","FLED","FLEW"]},{"s":"SIR","t":"MAD","par":4,"p":["AIR","AID","MID"]},{"s":"BOAT","t":"LIFE","par":6,"p":["COAT","COST","LOST","LIST","LIFT"]},{"s":"EARN","t":"TINY","par":7,"p":["DARN","DARE","DIRE","TIRE","TIDE","TIDY"]},{"s":"CUT","t":"TAX","par":4,"p":["CAT","FAT","FAX"]},{"s":"BOY","t":"FLY","par":4,"p":["TOY","TRY","FRY"]},{"s":"CHECK","t":"QUOTE","par":9,"p":["CHICK","CLICK","SLICK","SLICE","SPICE","SPITE","SUITE","QUITE"]},{"s":"PRIDE","t":"THANK","par":6,"p":["PRICE","PRICK","TRICK","THICK","THINK"]},{"s":"HIRE","t":"LIST","par":5,"p":["WIRE","WIFE","LIFE","LIFT"]},{"s":"ACT","t":"KID","par":4,"p":["ANT","AND","AID"]},{"s":"SHAPE","t":"STICK","par":5,"p":["SHARE","STARE","STARK","STACK"]},{"s":"ROCK","t":"WIND","par":5,"p":["LOCK","LICK","LINK","WINK"]},{"s":"ROCK","t":"TAIL","par":6,"p":["RACK","RANK","TANK","TALK","TALL"]},{"s":"BYE","t":"KID","par":4,"p":["DYE","DIE","DID"]},{"s":"WOLF","t":"FAKE","par":7,"p":["GOLF","GOLD","BOLD","BALD","BALE","BAKE"]},{"s":"FREE","t":"BELL","par":6,"p":["FLEE","FLED","FEED","FEEL","FELL"]},{"s":"WEAR","t":"MAIL","par":5,"p":["HEAR","HEIR","HAIR","HAIL"]},{"s":"READ","t":"MAKE","par":6,"p":["HEAD","HERD","HARD","HARE","MARE"]},{"s":"WRITE","t":"STYLE","par":9,"p":["WHITE","WHILE","WHALE","SHALE","SHAKE","STAKE","STOKE","STOLE"]},{"s":"FUND","t":"EASE","par":7,"p":["FIND","BIND","BAND","BALD","BALE","BASE"]},{"s":"PAIN","t":"SOLO","par":7,"p":["MAIN","MAIL","MALL","MALE","SALE","SOLE"]},{"s":"QUITE","t":"SHIRT","par":9,"p":["SUITE","SPITE","SPICE","SPACE","SPARE","SHARE","SHORE","SHORT"]},{"s":"FLAG","t":"TAIL","par":7,"p":["FLAT","FEAT","FELT","FELL","TELL","TALL"]},{"s":"MAX","t":"TRY","par":4,"p":["MAY","DAY","DRY"]},{"s":"HEAR","t":"GAIN","par":5,"p":["HEIR","HAIR","PAIR","PAIN"]},{"s":"PICK","t":"LOST","par":5,"p":["PACK","PACT","PAST","LAST"]},{"s":"SPIN","t":"RIDE","par":8,"p":["SHIN","CHIN","COIN","CORN","CORE","CODE","RODE"]},{"s":"HARM","t":"ROOM","par":5,"p":["FARM","FORM","DORM","DOOM"]},{"s":"PRAY","t":"ROOT","par":8,"p":["PREY","PREP","PROP","POOP","POOL","FOOL","FOOT"]},{"s":"TREND","t":"BLACK","par":8,"p":["TREAD","BREAD","BREED","BLEED","BLEND","BLAND","BLANK"]},{"s":"TERM","t":"NEED","par":6,"p":["TEAM","TEAR","DEAR","DEER","DEED"]},{"s":"EYE","t":"AND","par":5,"p":["DYE","DIE","DID","AID"]},{"s":"RUN","t":"EAR","par":4,"p":["BUN","BAN","BAR"]}]};
+const DICT = new Set(DATA.dict);
+const PUZZLES = DATA.puzzles;
+const ENDLESS = DATA.endless.concat(DATA.puzzles.map(q=>({s:q.s,t:q.t,par:[...q.s].filter((c,i)=>c!==q.t[i]).length,p:q.p})));
+let MODE = 'endless';
+let DAILY = false;                                   // daily-challenge mode (one fixed 5-letter puzzle per calendar day)
+const DAILY_HOUR = 9;   // a new daily unlocks at 9:00 AM local time
+const dailyDate = (d=new Date())=>{ const x=new Date(d); x.setHours(x.getHours()-DAILY_HOUR); return x; };   // the "daily day" runs 9 AM → 9 AM
+const fmtKey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const dayKey = ()=> fmtKey(dailyDate());
+const dayLabel = ()=> dailyDate().toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+function nextUnlock(){ const n=new Date(), u=new Date(n); u.setHours(DAILY_HOUR,0,0,0); if (u<=n) u.setDate(u.getDate()+1); return u.getTime(); }   // the coming 9 AM
+function dailyPuzzle(){ const pool=ENDLESS.filter(q=>q.s.length===5); let h=0; for(const ch of dayKey()) h=(h*31+ch.charCodeAt(0))>>>0; return pool[h%pool.length]; }
+function dailyLoad(){ try{ return JSON.parse(localStorage.getItem('dailyRec')||'null'); }catch(e){ return null; } }
+function dailySave(v){ try{ localStorage.setItem('dailyRec', JSON.stringify(v)); }catch(e){} }
+function dailyClear(){ try{ localStorage.removeItem('dailyRec'); }catch(e){} }
+function dailyDone(){ const d=dailyLoad(); return !!(d && d.date === dayKey()); }   // finished within the current 9 AM → 9 AM day
+function dailyLocked(){ return dailyDone(); }
+let countT=null;
+function startCountdown(){
+  clearInterval(countT);
+  const tick=()=>{ let s=Math.max(0,Math.ceil((nextUnlock()-Date.now())/1000));
+    const h=String(Math.floor(s/3600)).padStart(2,'0'), mi=String(Math.floor(s%3600/60)).padStart(2,'0'), se=String(s%60).padStart(2,'0');
+    $('#countTime').textContent=h+':'+mi+':'+se; if(s===0){ clearInterval(countT); dailyClear(); if(DAILY) E.load(); } };
+  tick(); countT=setInterval(tick,1000);
+}
+
+
+/* ---------------- Play limit: 5 regular levels, then a 1-hour cooldown ---------------- */
+const LOCK_ENABLED = false;   // regular-level cooldown switched off for now
+const LOCK_AFTER = 5, LOCK_MS = 60*60*1000;
+let lockT = null;
+function regLoad(){ try{ return JSON.parse(localStorage.getItem('reg')||'{}'); }catch(e){ return {}; } }
+function regSave(v){ try{ localStorage.setItem('reg', JSON.stringify(v)); }catch(e){} }
+function lockActive(){ if (!LOCK_ENABLED) return false; const r=regLoad(); return (r.lockUntil||0) > Date.now(); }
+function applyLock(){
+  clearInterval(lockT);
+  const r=regLoad();
+  if (!LOCK_ENABLED || !((r.lockUntil||0) > Date.now())){ document.body.classList.remove('locked'); return; }
+  document.body.classList.add('locked');
+  const tick=()=>{ let s=Math.max(0,Math.ceil((r.lockUntil-Date.now())/1000));
+    const h=String(Math.floor(s/3600)).padStart(2,'0'), mi=String(Math.floor(s%3600/60)).padStart(2,'0'), se=String(s%60).padStart(2,'0');
+    $('#lockTime').textContent=h+':'+mi+':'+se;
+    if (s===0){ clearInterval(lockT); regSave({count:0}); document.body.classList.remove('locked'); } };
+  tick(); lockT=setInterval(tick,1000);
+}
+
+/* ---------------- Session / level order ---------------- */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+let order = shuffle(PUZZLES.map((_,i)=>i));
+let levelIdx = 0;
+let eOrder = shuffle(ENDLESS.map((_,i)=>i));
+let eIdx = 0;
+
+/* ---------------- Game state ---------------- */
+let P;            // current puzzle {s,t,p}
+let L;            // word length
+let rows;         // [{pos, letter, revealed}]
+let cursor;       // {row, col}
+let solved = false;
+let hintsUsed = 0;
+
+const $ = s => document.querySelector(s);
+function onTap(el, fn){ // works in iframes, webviews, iOS, desktop; no double-fire
+  let touchedAt=0;
+  el.addEventListener('touchend', e=>{ touchedAt=Date.now(); e.preventDefault(); fn(); }, {passive:false});
+  el.addEventListener('click', e=>{ if (Date.now()-touchedAt<600) return; /* ghost click after touch */ e.preventDefault(); fn(); });
+}
+const ladderEl = $('#ladder'), msgEl = $('#msg'), footer = $('#footer'), nextBtn = $('#nextBtn'), hintBtn = $('#hintBtn');
+
+function loadPuzzle(){
+  if (MODE==='endless') return E.load();
+  $('#subLbl').textContent='Change ONE letter at a time to reach the target word.'; $('#stepsLbl').textContent='';
+  if (levelIdx >= order.length){ order = shuffle(PUZZLES.map((_,i)=>i)); levelIdx = 0; }
+  P = PUZZLES[order[levelIdx]];
+  L = P.s.length;
+  const steps = hamming(P.s, P.t);
+  rows = Array.from({length: steps-1}, () => ({pos:null, letter:null, revealed:false}));
+  solved = false; hintsUsed = 0;
+  footer.classList.remove('done'); nextBtn.classList.remove('in');
+  hintBtn.disabled = false;
+  document.documentElement.style.setProperty('--n', L);
+  const size = Math.min(64, Math.floor((Math.min(window.innerWidth, 520) - 32 - 2*48 - 12*(L-1)) / L));
+  document.documentElement.style.setProperty('--tile-size', size + 'px');
+  $('#levelLbl').textContent = 'LEVEL ' + (levelIdx+1);
+  $('#fillLbl').textContent = 'FILL IN THE ' + rows.length + ' MISSING WORD' + (rows.length===1?'':'S');
+  setMsg('');
+  cursor = {row:0, col: firstAvailable(0)};
+  render();
+}
+
+function hamming(a,b){let n=0;for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++;return n;}
+
+/* Derived words. word(i) = word of missing row i, or null if that row has no change yet. */
+function baseWord(i){ return i===0 ? P.s : word(i-1); }
+function word(i){
+  const r = rows[i]; const base = baseWord(i);
+  if (!base || r.pos===null) return null;
+  return base.slice(0,r.pos) + r.letter + base.slice(r.pos+1);
+}
+function lockedSet(i){ const s=new Set(); for(let j=0;j<i;j++) if(rows[j].pos!==null && status(j)==='ok') s.add(rows[j].pos); return s; }
+function firstAvailable(i){ const lk=lockedSet(i); for(let c=0;c<L;c++) if(!lk.has(c)) return c; return 0; }
+
+/* Row status: 'empty' | 'ok' | 'bad' (not a word) | 'warn' (a word, but can never reach target) */
+function status(i){
+  const w = word(i); if (!w) return 'empty';
+  if (!DICT.has(w)) return 'bad';
+  // Each position may change only once, so the new letter must be the target's letter there.
+  if (rows[i].letter !== P.t[rows[i].pos]) return 'warn';
+  return 'ok';
+}
+/* Rule-based full-ladder validation (accepts ANY path that satisfies the rules). */
+function validateLadder(words){ // words = [start, ..., target]
+  const used = new Set();
+  for (let i=1;i<words.length;i++){
+    const a=words[i-1], b=words[i];
+    if (!a||!b||a.length!==b.length) return false;
+    let diff=-1, n=0;
+    for (let k=0;k<a.length;k++) if(a[k]!==b[k]){n++;diff=k;}
+    if (n!==1 || used.has(diff)) return false;
+    used.add(diff);
+    if (i<words.length-1 && !DICT.has(b)) return false;
+  }
+  return true;
+}
+function activeRow(){ for(let i=0;i<rows.length;i++) if(status(i)!=='ok') return i; return rows.length; }
+
+/* ---------------- Input ---------------- */
+function typeLetter(ch){
+  if (MODE==='endless') return E.type(ch);
+  if (solved) return;
+  const i = cursor.row; if (i>=rows.length) return;
+  if (rows[i].revealed) return;
+  if (lockedSet(i).has(cursor.col)) return;
+  const base = baseWord(i);
+  if (base && base[cursor.col] === ch && rows[i].pos === null){
+    // Same letter as the row above: not a change. Show it in this slot only; nothing else is copied.
+    rows[i].typed = Object.assign({}, rows[i].typed, {[cursor.col]: ch});
+    const lk = lockedSet(i); let c = cursor.col;
+    for (let n=0;n<L;n++){ c=(c+1)%L; if(!lk.has(c) && !rows[i].typed[c]) { cursor.col=c; break; } }
+    setMsg(''); render(); return;
+  }
+  rows[i] = {pos: cursor.col, letter: ch, revealed:false};
+  for (let j=i+1;j<rows.length;j++) rows[j] = {pos:null, letter:null, revealed:false};
+  afterChange(i, cursor.col);
+}
+function backspace(){
+  if (MODE==='endless') return E.backspace();
+  if (solved) return;
+  let i = cursor.row;
+  if (i<rows.length && rows[i].pos===null && rows[i].typed && Object.keys(rows[i].typed).length){
+    const cols = Object.keys(rows[i].typed).map(Number); const c = cols.includes(cursor.col) ? cursor.col : cols[cols.length-1];
+    delete rows[i].typed[c]; cursor.col = c; setMsg(''); render(); return;
+  }
+  if (i<rows.length && rows[i].pos!==null && !rows[i].revealed){
+    rows[i] = {pos:null,letter:null,revealed:false};
+    for (let j=i+1;j<rows.length;j++) rows[j] = {pos:null, letter:null, revealed:false};
+    cursor = {row:i, col:firstAvailable(i)};
+  } else if (i>0 && !rows[i-1].revealed){
+    i--; rows[i] = {pos:null,letter:null,revealed:false};
+    for (let j=i+1;j<rows.length;j++) rows[j] = {pos:null, letter:null, revealed:false};
+    cursor = {row:i, col:firstAvailable(i)};
+  }
+  setMsg(''); render();
+}
+function afterChange(i, col){
+  const st = status(i);
+  if (st==='ok'){
+    setMsg('');
+    if (i+1 < rows.length) cursor = {row:i+1, col:firstAvailable(i+1)};
+    else cursor = {row:i, col};
+    checkSolved();
+  } else {
+    cursor = {row:i, col};
+    if (st==='bad') setMsg(word(i) + ' is not a word — try another letter.', true);
+    else setMsg(word(i) + ' is a word, but that letter can’t lead to ' + P.t + '.', true);
+  }
+  render(i, col);
+}
+function tapCell(i, c){
+  if (MODE==='endless') return E.tap(i,c);
+  if (solved || rows[i].revealed) return;
+  if (i > activeRow()) return;                 // can't skip ahead
+  if (lockedSet(i).has(c)) return;             // locked position
+  cursor = {row:i, col:c}; render();
+}
+function checkSolved(){
+  const words=[P.s]; for(let i=0;i<rows.length;i++){const w=word(i); if(!w) return; words.push(w);} words.push(P.t);
+  if (!validateLadder(words)) return;
+  solved = true; hintBtn.disabled = true;
+  footer.classList.add('done'); requestAnimationFrame(()=>requestAnimationFrame(()=>nextBtn.classList.add('in')));
+  const allRevealed = rows.every(r=>r.revealed);
+  if (allRevealed) setMsg('💡 Answers revealed for every row.');
+  else setMsg(hintsUsed ? 'Solved!' : 'Perfect ladder! 🎉');
+  fireConfetti(allRevealed ? .5 : 1);
+}
+
+/* ---------------- Hint: reveal the NEXT unanswered row ---------------- */
+function findPath(prefixWords, remaining){ // DFS over remaining positions; returns list of intermediate words
+  const cur = prefixWords[prefixWords.length-1];
+  if (remaining.length===1) return []; // last step goes straight to target
+  for (const p of remaining){
+    const w = cur.slice(0,p)+P.t[p]+cur.slice(p+1);
+    if (!DICT.has(w)) continue;
+    const rest = findPath([...prefixWords, w], remaining.filter(x=>x!==p));
+    if (rest) return [w, ...rest];
+  }
+  return null;
+}
+function hint(){
+  if (MODE==='endless') return E.hint();
+  if (solved) return;
+  let i = activeRow(); if (i>=rows.length) return;
+  // back off to the deepest completed prefix from which the target is still reachable
+  let path=null;
+  for (; i>=0; i--){
+    const words=[P.s]; for(let j=0;j<i;j++) words.push(word(j));
+    const used=new Set(); for(let j=0;j<i;j++) used.add(rows[j].pos);
+    const remaining=[]; for(let k=0;k<L;k++) if(P.s[k]!==P.t[k] && !used.has(k)) remaining.push(k);
+    path = findPath(words, remaining);
+    if (path) break;
+  }
+  if (!path || i<0) return;
+  const base = baseWord(i), w = path[0];
+  let pos=-1; for(let k=0;k<L;k++) if(base[k]!==w[k]) pos=k;
+  rows[i] = {pos, letter:w[pos], revealed:true};
+  for (let j=i+1;j<rows.length;j++) rows[j] = {pos:null,letter:null,revealed:false};
+  hintsUsed++;
+  const next = activeRow();
+  cursor = next<rows.length ? {row:next, col:firstAvailable(next)} : {row:i, col:pos};
+  setMsg('💡 Row ' + (i+1) + ' revealed.');
+  render(i, pos);
+  checkSolved();
+}
+
+
+/* ================= ENDLESS MODE: free ladder, any position any number of times, no row limit ================= */
+const E = {
+  P:null, words:[], revealed:new Set(), cur:{pos:null, letter:null, typed:{}}, cursor:0, solvedRow:false, misses:0, badIdx:new Set(), lockUntil:0,
+  load(){
+    levelAbandonIfOpen();
+    if (eIdx >= eOrder.length){ eOrder = shuffle(ENDLESS.map((_,i)=>i)); eIdx = 0; }
+    E.P = DAILY ? dailyPuzzle() : journeyPuzzle(); P = E.P; L = P.s.length; applyTheme();
+    document.body.classList.toggle('daily', DAILY); $('#dailyBtn').classList.toggle('on', DAILY); clearInterval(countT);
+    E.words = []; E.revealed = new Set(); E.cur = {pos:null, letter:null, typed:{}}; E.cursor = 0; E.misses = 0; E.badIdx = new Set();
+    levelStart = Date.now(); levelOpen = true;
+    solved = false; hintsUsed = 0; earnShow([]);
+    footer.classList.remove('done'); document.body.classList.remove('done'); nextBtn.classList.remove('in','slow'); $('#donebar').classList.remove('in'); hintBtn.disabled = false;
+    document.documentElement.style.setProperty('--n', L);
+    const size = Math.min(64, Math.floor((Math.min(window.innerWidth, 520) - 32 - 2*48 - 12*(L-1)) / L));
+    document.documentElement.style.setProperty('--tile-size', size + 'px');
+    $('#levelLbl').textContent = DAILY ? 'DAILY · ' + dayLabel() : journeyLabel();
+    document.body.classList.remove('locked'); clearInterval(lockT);
+    if (!DAILY){ const r=regLoad(); if (LOCK_ENABLED && (r.lockUntil||0) > Date.now() && r.cur && ENDLESS[r.cur.idx] && !E.replay){ eOrder[eIdx]=r.cur.idx; E.P=P=ENDLESS[r.cur.idx]; L=P.s.length; E.words=r.cur.words.slice(); E.badIdx=new Set(r.cur.bad||[]); E.misses=(r.cur.bad||[]).length; E.finish(true); return; } }
+    if (DAILY){ const saved = dailyLoad(); if (saved && saved.date === dayKey() && saved.words){ const q=ENDLESS.find(x=>x.s===saved.s && x.t===saved.t); if (q){ E.P=P=q; L=P.s.length; $('#levelLbl').textContent='DAILY · '+dayLabel(); } E.words = saved.words.slice(); E.badIdx = new Set(saved.bad||[]); E.misses = (saved.bad||[]).length; E.finish(true); return; } }
+    $('#subLbl').textContent = 'Change ONE letter at a time to reach the target word.';
+    $('#fillLbl').textContent = 'REACH THE TARGET · NO STEP LIMIT';
+    setMsg(''); document.querySelector('main').scrollTop=0; E.render();
+    if (!$('#menu').classList.contains('show')) track('level_start', { par:P.par });
+  },
+  last(){ for (let i=E.words.length-1;i>=0;i--) if(!E.badIdx.has(i)) return E.words[i]; return P.s; },
+  baseFor(i){ for (let k=i-1;k>=0;k--) if(!E.badIdx.has(k)) return E.words[k]; return P.s; },
+  oneAway(w){ let n=0; for(let i=0;i<L;i++) if(w[i]!==P.t[i]) n++; return n===1; },
+  curWord(){ const b = E.last(); return E.cur.pos===null ? null : b.slice(0,E.cur.pos)+E.cur.letter+b.slice(E.cur.pos+1); },
+  status(w){ if (!w) return 'empty'; if (w===P.t) return 'hit'; return DICT.has(w) ? 'ok' : 'bad'; },
+  reachable(from){ // BFS: can the target still be reached from this word?
+    if (from===P.t) return true;
+    const seen=new Set([from]); const q=[from];
+    while(q.length){ const w=q.shift(); for (const x of E.neighbors(w)){ if (x===P.t) return true; if(!seen.has(x)){seen.add(x);q.push(x);} } }
+    return false;
+  },
+  neighbors(w){ const out=[]; for(let i=0;i<L;i++) for(const c of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){ if(c===w[i]) continue; const x=w.slice(0,i)+c+w.slice(i+1); if(DICT.has(x)) out.push(x);} return out; },
+  shortest(from){ // BFS path from -> target (list of intermediate words + target)
+    const prev=new Map([[from,null]]); const q=[from];
+    while(q.length){ const w=q.shift(); if (w===P.t) break; for (const x of E.neighbors(w)) if(!prev.has(x)){prev.set(x,w);q.push(x);} }
+    if (!prev.has(P.t)) return null;
+    const path=[]; let w=P.t; while(w!==from){ path.push(w); w=prev.get(w); } return path.reverse();
+  },
+  type(ch){
+    if (solved) return;
+    if (performance.now() < E.lockUntil) return;     // a row was just committed — swallow keystrokes for a moment
+    const base = E.last();
+    if (base[E.cursor]===ch && E.cur.pos===null){ // same letter: place only, no fill
+      E.cur.typed[E.cursor]=ch; for(let n=1;n<=L;n++){ const c=(E.cursor+n)%L; if(!E.cur.typed[c]){E.cursor=c;break;} }
+      setMsg(''); E.render(); return;
+    }
+    E.cur = {pos:E.cursor, letter:ch, typed:{}};
+    const w = E.curWord(), st = E.status(w);
+    E.lockUntil = performance.now() + 350;            // one change per row: ignore further keys until the new row is on screen
+    if (st==='hit'){ E.words.push(w); E.cur={pos:null,letter:null,typed:{}}; E.finish(); return; }
+    if (st==='ok'){
+      E.words.push(w); E.cur={pos:null,letter:null,typed:{}}; E.cursor=0;
+      setMsg('');
+      if (E.oneAway(w)){ E.words.push(P.t); E.finish(); return; }   // one letter from the target: level complete
+    } else {
+      E.words.push(w); E.badIdx.add(E.words.length-1); E.misses++;   // wrong word stays on the board and counts as a step
+      E.cur={pos:null,letter:null,typed:{}}; E.cursor=0;
+      setMsg(w + ' is not a word — that cost a step.', true);
+    }
+    E.render(E.words.length-1);
+  },
+  backspace(){
+    if (solved) return;
+    // Backspace only edits the CURRENT row; committed rows above are never removed.
+    if (E.cur.pos!==null){ E.cur={pos:null,letter:null,typed:{}}; }                       // clear the auto-filled word
+    else if (Object.keys(E.cur.typed).length){                                            // remove the last placed same-letter
+      const ks=Object.keys(E.cur.typed).map(Number).sort((a,b)=>a-b); delete E.cur.typed[ks[ks.length-1]];
+    }
+    E.cursor=0;   // and return the cursor to the left-most letter
+    setMsg(''); E.render();
+  },
+  tap(i, c){ // i = index of the active row (only the active row is editable)
+    if (solved || i!==E.words.length) return; E.cursor=c; E.render();
+  },
+  hint(){
+    if (solved) return;
+    // back off to the last word from which the target is reachable
+    let k = E.words.length;
+    while (k>0 && (E.badIdx.has(k-1) ? !E.reachable(E.baseFor(k-1)) : !E.reachable(E.words[k-1]))) k--;
+    if (k < E.words.length){ E.words.length = k; for (const r of [...E.revealed]) if (r>=k) E.revealed.delete(r); for (const b of [...E.badIdx]) if (b>=k) E.badIdx.delete(b); }
+    const path = E.shortest(E.last()); if (!path) return;
+    E.words.push(path[0]); E.revealed.add(E.words.length-1); hintsUsed++;
+    E.cur={pos:null,letter:null,typed:{}}; E.cursor=0;
+    if (path[0]===P.t){ E.finish(); return; }
+    if (E.oneAway(path[0])){ E.words.push(P.t); E.finish(); return; }
+    setMsg('💡 Step ' + E.words.length + ' revealed.'); E.render(E.words.length-1);
+  },
+  finish(quiet){
+    solved = true; hintBtn.disabled = true; document.body.classList.add('done');
+    if (DAILY){ if(!quiet){ dailySave({date:dayKey(), next:nextUnlock(), s:P.s, t:P.t, words:E.words, bad:[...E.badIdx]}); streakBump(); } startCountdown(); }
+    else {
+      const r=regLoad();
+      if (!quiet){ if (!E.replay) r.count=(r.count||0)+1; r.cur={idx:eOrder[eIdx], words:E.words.slice(), bad:[...E.badIdx]}; if (LOCK_ENABLED && r.count>=LOCK_AFTER && !(r.lockUntil>Date.now())){ r.lockUntil=Date.now()+LOCK_MS; r.count=0; } regSave(r); }
+      E.replay=false;
+      applyLock();
+    }
+    footer.classList.add('done'); requestAnimationFrame(()=>requestAnimationFrame(()=>{ $('#donebar').classList.add('in'); if (document.body.classList.contains('beat')) setTimeout(()=>nextBtn.classList.add('in','slow'), 2000); else nextBtn.classList.add('in'); }));   // over par: challenge first, NEXT pops in gently two seconds later
+    const steps = E.words.length, par = P.par;
+    const allRevealed = E.revealed.size>0 && E.words.every((w,i)=>E.revealed.has(i) || w===P.t || E.badIdx.has(i));
+    // ---- coins: pay out once per fresh completion; replays only earn a first-time perfect bonus
+    if (!quiet){
+      const live=E.shortest(P.s), bestN=Math.min((P.p&&P.p.length? P.p.length+1 : Infinity), live?live.length:Infinity), perfect = E.words.length<=bestN, noHint = E.revealed.size===0;
+      const key=(DAILY?'D:':'J:')+P.s+'>'+P.t, parts=[]; W.done=W.done||{}; const firstTime=!W.done[key]; W.done[key]=1;   // base pay once per puzzle; perfect bonus once per puzzle
+      if (firstTime){ if (DAILY){ parts.push([COINS.daily,'COMPLETED']); if (perfect) parts.push([COINS.dailyPerfect,'BEST ROUTE']); } else { parts.push([COINS.level,'COMPLETED']); if (perfect) parts.push([COINS.perfect,'BEST ROUTE']); } if (noHint && COINS.noHint) parts.push([COINS.noHint,'NO HINTS']); if (perfect) W.perf[key]=1; }
+      else if (perfect && !W.perf[key]){ parts.push([DAILY?COINS.dailyPerfect:COINS.perfect,'BEST ROUTE']); W.perf[key]=1; }
+      earnShow(parts, hopEndMs() + 1100);   // after the hop and the cheer text
+      levelOpen=false; track(DAILY ? 'daily_complete' : 'level_complete', { steps:E.words.length, par:bestN, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra:{earned:parts.reduce((a,p)=>a+p[0],0), replay:!firstTime} });
+    } else earnShow([]);
+    setMsg('');   // no completion text — the green row, the BEST card and the confetti say it
+    E.celebrate = !quiet;
+    E.render(quiet ? -1 : E.words.length-1); E.celebrate = false;
+    if (!quiet && !document.body.classList.contains('beat') && E.revealed.size===0) fireConfetti(1);   // perfect solve with no hints only
+  },
+  render(popRow=-1){
+    ladderEl.innerHTML='';
+    ladderEl.appendChild(fixedRow(P.s));
+    const ar=document.createElement('div'); ar.className='arrow'; ar.textContent='↓'; ladderEl.appendChild(ar);
+    E.words.forEach((w,i)=>{
+      const st=E.badIdx.has(i)?'bad':E.status(w), prevW = E.baseFor(i);
+      const row=document.createElement('div'); row.className='row '+(st==='ok'||st==='hit'?'done':'bad still');
+      for (let c=0;c<L;c++){
+        const cell=document.createElement('div'); cell.className='cell slot filled';
+        cell.textContent=w[c];
+        if (st==='hit') cell.classList.add('hit');
+        else if (w[c]!==prevW[c]) cell.classList.add(E.revealed.has(i)?'revealed':'changed');
+        if (E.revealed.has(i)) cell.classList.add('revealed');
+        const isGoal = st!=='hit' && !E.badIdx.has(i) && w[c]===P.t[c];
+        if (i===E.words.length-1 && isGoal) cell.classList.add('goal');   // only the latest row shows green; older rows revert to plain
+        else if (i===popRow-1 && isGoal){ cell.classList.add('goal'); setTimeout(()=>cell.classList.remove('goal'), 420); }   // keep green until the copy has landed below
+        if (i===popRow){
+          const dropD = 60+c*45, hopD = (60+(L-1)*45+340) + 120 + c*70;   // hop starts only after the last tile has landed
+          if (w[c]!==prevW[c]){ cell.classList.add('pop'); if (st==='hit'){ cell.classList.add('hop'); cell.style.animationDelay='0ms, '+hopD+'ms'; } }
+          else { cell.classList.add('drop'); if (st==='hit'){ cell.classList.add('hop'); cell.style.animationDelay=dropD+'ms, '+hopD+'ms'; } else cell.style.animationDelay=dropD+'ms'; }
+        }   // untouched letters fall in from the row above; on the target word every tile then hops
+        row.appendChild(cell);
+      }
+      const s=document.createElement('div'); s.className='status show '+(st==='bad'?'bad':'ok'); s.textContent = st==='bad'?'✗':'✓'; row.appendChild(s);
+      ladderEl.appendChild(row);
+    });
+    if (!solved){ // active row
+      const i=E.words.length, w=E.curWord(), st=E.status(w);
+      const row=document.createElement('div'); row.className='row '+(st==='bad'?'bad':'');
+      for (let c=0;c<L;c++){
+        const cell=document.createElement('div'); cell.className='cell slot';
+        if (w){ cell.textContent=w[c]; cell.classList.add('filled'); if(c===E.cur.pos) cell.classList.add('changed'); }
+        else if (E.cur.typed[c]){ cell.textContent=E.cur.typed[c]; cell.classList.add('filled','same'); }
+        else { cell.classList.add('empty'); cell.textContent='·'; }
+        if (cell.textContent && cell.textContent!=='·' && st!=='bad' && cell.textContent===P.t[c]) cell.classList.add('goal');
+        if (E.cursor===c) cell.classList.add('cursor');
+        onTap(cell, ()=>E.tap(i,c));
+        row.appendChild(cell);
+      }
+      if (st==='bad'){ // tappable ✗: clears this row and puts the cursor on its first letter
+        const s=document.createElement('div'); s.className='status show bad tappable'; s.textContent='✗'; s.setAttribute('role','button'); s.setAttribute('aria-label','Clear row');
+        onTap(s, ()=>{ E.cur={pos:null,letter:null,typed:{}}; E.cursor=0; setMsg(''); E.render(); });
+        row.appendChild(s);
+      }
+      ladderEl.appendChild(row);
+    }
+    // target is pinned in the footer bar so it never scrolls away as rows are added
+    $('#tbarWord').innerHTML=[...P.t].map(ch=>'<b>'+ch+'</b>').join('');
+    $('#tbarSteps').textContent='STEPS '+E.words.length+' · PAR '+P.par+(E.misses?' · '+E.misses+' WRONG':'');
+    // Keep the active row in view WITHOUT yanking the board: scroll only if it is hidden, only as far as needed,
+    // smoothly, and after a short pause so the player sees their word land (and its ✓) before anything moves.
+    clearTimeout(E._scrollT);
+    E._scrollT = setTimeout(()=>{
+      const m=document.querySelector('main'); const rows=ladderEl.querySelectorAll('.row'); const last=rows[rows.length-1]; if(!last) return;
+      const mr=m.getBoundingClientRect(), lr=last.getBoundingClientRect(), limit=mr.bottom-parseFloat(m.style.paddingBottom||0)+16;
+      if (lr.bottom > limit) m.scrollBy({top: lr.bottom-limit+12, behavior:'smooth'});
+    }, solved ? 0 : 320);
+    const board=$('#board'), best=$('#best'); board.classList.toggle('solved', solved);
+    $('#restartBtn').classList.toggle('alert', !solved && E.badIdx.size>0); costsRender();
+    if (solved){
+      const path = (P.p && P.p.length) ? [P.s, ...P.p, P.t] : [P.s, ...(E.shortest(P.s)||[])];   // puzzle's own route uses common words; live search is the fallback
+      best.classList.remove('open');
+      const live = E.shortest(P.s); const bestN = Math.min(path.length-1, live ? live.length : Infinity), beat = E.words.length > bestN;   // true minimum over the full dictionary
+      const PRAISE = [['🏆','PERFECT!'],['💎','FLAWLESS!'],['🎯','NAILED IT!'],['✅','SPOT ON!'],['✨','BRILLIANT!'],['🧠','GENIUS!']];
+      const pr = PRAISE[(E.words.length*7 + P.s.charCodeAt(0) + P.t.charCodeAt(1)) % PRAISE.length];   // stable per puzzle, varies across puzzles
+      const title = beat ? 'BEST · ' + bestN + ' STEPS' : '<span class="ic">'+pr[0]+'</span>'+pr[1];
+      best.classList.toggle('perfect', !beat);
+      document.body.classList.toggle('beat', beat);   // over par -> green challenge button appears in the footer
+      $('#retryBtn').textContent = 'Can you do it in ' + bestN + ' steps?';
+      $('#praiseT').innerHTML = '<span class="ic">'+pr[0]+'</span>'+pr[1]; $('#praiseS').textContent = 'SOLVED IN ' + bestN + ' STEPS';
+      best.classList.add('static');   // both titles are plain labels — the route is never revealed
+      best.classList.remove('wait'); if (E.celebrate && !beat){ best.classList.add('wait'); const b=best; setTimeout(()=>{ b.classList.remove('wait'); b.style.animation='none'; void b.offsetWidth; b.style.animation=''; }, hopEndMs()+150); }
+      best.innerHTML='<button class="bl" type="button">'+title+'</button><div class="bws">'+path.map((w,i)=>{
+        const prev=i?path[i-1]:null; const cls=i===0?'s':(w===P.t?'t':'');
+        const html=[...w].map((ch,k)=>(prev&&prev[k]!==ch)?'<span class="c">'+ch+'</span>':ch).join('');
+        return (i?'<span class="ar">→</span>':'')+'<span class="bw '+cls+'">'+html+'</span>';}).join('')+'</div>'+(beat?'':'<div class="sub2">SOLVED IN '+bestN+' STEPS</div>');
+
+    } else { best.innerHTML=''; document.body.classList.remove('beat'); }
+    // after completion: "YOU · N STEPS" under the BEST card (during play the count lives in the target bar)
+    $('#stepsLbl').textContent = solved ? 'YOU · ' + E.words.length + ' STEPS' + (E.misses ? '  (' + E.misses + ' WRONG)' : '') : '';
+    $('#stepsLbl').classList.remove('show');   // hidden by request
+  }
+};
+
+/* ---------------- Render ---------------- */
+function setMsg(t, soft){ msgEl.textContent=t||''; msgEl.classList.toggle('soft', !!soft); }
+function render(popRow=-1, popCol=-1){
+  if (MODE==='endless') return E.render();
+  ladderEl.innerHTML='';
+  ladderEl.appendChild(fixedRow(P.s));
+  const ar = document.createElement('div'); ar.className='arrow'; ar.textContent='↓'; ladderEl.appendChild(ar);
+  const act = activeRow();
+  rows.forEach((r,i)=>{
+    const st = status(i), w = word(i), base = baseWord(i), lk = lockedSet(i);
+    const row = document.createElement('div'); row.className='row '+(st==='ok'?'done':st==='bad'?'bad':st==='warn'?'warn':'');
+    for (let c=0;c<L;c++){
+      const cell=document.createElement('div'); cell.className='cell slot';
+      if (lk.has(c)) { cell.classList.add('locked'); cell.textContent = base ? base[c] : ''; }
+      else if (w) { cell.textContent=w[c]; cell.classList.add('filled'); if(c===r.pos) cell.classList.add(r.revealed?'revealed':'changed'); if(r.revealed) cell.classList.add('revealed'); }
+      else if (r.typed && r.typed[c]) { cell.textContent=r.typed[c]; cell.classList.add('filled','same'); }
+      else { cell.classList.add('empty'); cell.textContent='·'; }
+      if (!solved && cursor.row===i && cursor.col===c && !r.revealed) cell.classList.add('cursor');
+      if (i===popRow && (w && !lk.has(c))) cell.classList.add('pop');
+      onTap(cell, ()=>tapCell(i,c));
+      row.appendChild(cell);
+    }
+    const s=document.createElement('div'); s.className='status '+st+(st!=='empty'?' show':'');
+    s.textContent = st==='ok'?'✓':st==='bad'?'✗':st==='warn'?'!':'';
+    row.appendChild(s);
+    ladderEl.appendChild(row);
+  });
+  ladderEl.appendChild(fixedRow(P.t));
+}
+function plainRow(w){
+  const row=document.createElement('div'); row.className='row target';
+  for (const ch of w){ const c=document.createElement('div'); c.className='cell plain'; c.textContent=ch; row.appendChild(c); }
+  const lbl=document.createElement('div'); lbl.className='tlabel'; lbl.textContent='TARGET'; row.appendChild(lbl);
+  return row;
+}
+function fixedRow(w){
+  const row=document.createElement('div'); row.className='row';
+  for (const ch of w){ const c=document.createElement('div'); c.className='cell fixed'; c.textContent=ch; row.appendChild(c); }
+  return row;
+}
+
+/* ---------------- On-screen keyboard + physical keys ---------------- */
+(function buildKb(){
+  const kb=$('#kb'); const layout=['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+  layout.forEach((line,idx)=>{
+    const r=document.createElement('div'); r.className='krow';
+    if (idx===1){ const sp=document.createElement('div'); sp.className='key spacer'; r.appendChild(sp); }
+    for (const ch of line){ const k=document.createElement('button'); k.className='key'; k.textContent=ch; k.type='button'; onTap(k, ()=>typeLetter(ch)); r.appendChild(k); }
+    if (idx===1){ const sp=document.createElement('div'); sp.className='key spacer'; r.appendChild(sp); }
+    if (idx===2){ const k=document.createElement('button'); k.className='key wide'; k.textContent='⌫'; k.type='button'; onTap(k, backspace); r.appendChild(k); }
+    kb.appendChild(r);
+  });
+})();
+document.addEventListener('keydown', e=>{
+  if (tutOpen){ if (e.key==='Enter'||e.key===' '||e.key==='Escape') closeTut(); return; }
+  if ($('#nameDlg').classList.contains('show') || $('#menu').classList.contains('show') || $('#editor').classList.contains('show') || $('#arrive').classList.contains('show') || $('#coinDlg').classList.contains('show')) return;
+  if (e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
+  if (/^[a-zA-Z]$/.test(e.key)) { typeLetter(e.key.toUpperCase()); e.preventDefault(); }
+  else if (e.key==='Backspace') { backspace(); e.preventDefault(); }
+  else if (e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    if (solved) return; if (MODE==='endless'){ E.cursor=(E.cursor+(e.key==='ArrowRight'?1:L-1))%L; E.render(); e.preventDefault(); return; } const i=cursor.row; if(i>=rows.length) return; const lk=lockedSet(i);
+    let c=cursor.col; for(let n=0;n<L;n++){ c=(c+(e.key==='ArrowRight'?1:-1)+L)%L; if(!lk.has(c)) break; }
+    cursor.col=c; render(); e.preventDefault();
+  }
+  else if (e.key==='Enter' && solved) nextPuzzle();
+});
+onTap(hintBtn, hintPaid);
+const restartLevel = ()=>{ parts=[]; if (DAILY){ dailyClear(); } E.replay=true;   /* same level again: allowed during the cooldown, never counts toward it */ if(MODE==='endless'){ E.load(); } else { loadPuzzle(); } };
+onTap($('#restartBtn'), ()=>{ const p=restartPrice(); if (p>0 && W.coins>=p) coinsAdd(-p, $('#restartBtn')); restartLevel(); });   // header restart costs coins (free if you can't afford it)
+onTap($('#homeBtn'), openMenu);
+onTap($('#retryBtn'), restartLevel);
+onTap(nextBtn, nextPuzzle);
+function nextPuzzle(){ if(!solved) return; if (!DAILY && lockActive()) return; E.replay=false; parts=[]; const arrived = journeyAdvance(); loadPuzzle(); if (arrived) showArrival(); }
+function setMode(m){ if (MODE===m) return; MODE=m; $('#modeClassic').classList.toggle('on', m==='classic'); $('#modeEndless').classList.toggle('on', m==='endless'); loadPuzzle(); }
+onTap($('#modeClassic'), ()=>setMode('classic')); onTap($('#modeEndless'), ()=>setMode('endless'));
+
+/* ---------------- Soft confetti cannons (bottom corners, arcing upward) ---------------- */
+const cv=$('#confetti'), ctx=cv.getContext('2d'); let parts=[], raf=null;
+function resize(){ cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+resize(); addEventListener('resize', ()=>{resize(); if(P) loadPuzzleSizeOnly();});
+function loadPuzzleSizeOnly(){ const size=Math.min(64,Math.floor((Math.min(innerWidth,520)-32-2*48-12*(L-1))/L)); document.documentElement.style.setProperty('--tile-size',size+'px'); }
+const G = .02; // gentle gravity (px/frame²) for the drop
+const PASTEL=['#ffb3c6','#9ee7cf','#ffe08a','#a9c4ff','#d3b8ff','#ffc89a','#b5ef9f','#ffa9e6','#8fd9ff'];
+function spawnDrop(count, delayFrames){ // confetti released along the top edge, drifting down like falling paper
+  for (let i=0;i<count;i++){
+    parts.push({x:Math.random()*innerWidth, y:-20-Math.random()*innerHeight*.35, vx:0, vy:.4+Math.random()*.5,
+      w:8+Math.random()*7, h:10+Math.random()*10, rot:Math.random()*Math.PI, vr:(Math.random()-.5)*.18,
+      color:PASTEL[(Math.random()*PASTEL.length)|0], life:1, decay:0, shape:Math.random()<.3?'c':'r',
+      sway:Math.random()*Math.PI*2, swayAmp:.4+Math.random()*.7, fall:.9+Math.random()*.7});
+  }
+}
+const CONFETTI_ON = true;   // confetti only for a minimum-step solve (see finish)
+function fireConfetti(scale=1){
+  if (!CONFETTI_ON) return;
+  spawnDrop(Math.round(170*scale));   // one drop, staggered by starting height so it rains for a few seconds
+  if (!raf){ lastT = performance.now(); tick(lastT); }
+}
+let lastT = 0;
+function tick(now){
+  const dt = Math.min(2, (now - lastT) / (1000/60)); lastT = now;   // frame-rate independent (1 = one 60fps frame)
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p=>p.life>0 && p.y<innerHeight+40);
+  for (const p of parts){
+    p.vy = Math.min(p.vy + G*dt, p.fall);                 // ease up to a gentle terminal speed
+    p.sway += .06*dt; p.x += Math.sin(p.sway)*p.swayAmp*dt;
+    p.y += p.vy*dt; p.rot += p.vr*dt;
+    if (p.y > innerHeight*.78) p.life -= .012*dt;         // fade out near the bottom
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.fillStyle=p.color;
+    if (p.shape==='c'){ ctx.beginPath(); ctx.arc(0,0,p.w/2,0,Math.PI*2); ctx.fill(); }
+    else ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.rot*2))+1);
+    ctx.restore();
+  }
+  raf = parts.length ? requestAnimationFrame(tick) : (ctx.clearRect(0,0,innerWidth,innerHeight), null);
+}
+
+
+/* ---------------- Journey: cities, level mix, progress ---------------- */
+const DEFAULT_CITIES = [
+  {name:'PARIS',    levels:10, mix:{3:60,4:40,5:0}},
+  {name:'LONDON',   levels:10, mix:{3:40,4:50,5:10}},
+  {name:'NEW YORK', levels:10, mix:{3:30,4:50,5:20}},
+  {name:'TOKYO',    levels:12, mix:{3:20,4:50,5:30}},
+  {name:'SYDNEY',   levels:12, mix:{3:20,4:40,5:40}},
+  {name:'RIO',      levels:12, mix:{3:10,4:40,5:50}},
+  {name:'CAIRO',    levels:15, mix:{3:10,4:30,5:60}},
+  {name:'MUMBAI',   levels:15, mix:{3:0, 4:40,5:60}},
+  {name:'ROME',     levels:15, mix:{3:0, 4:30,5:70}},
+  {name:'ICELAND',  levels:20, mix:{3:0, 4:20,5:80}}
+];
+function citiesLoad(){ try{ const c=JSON.parse(localStorage.getItem('cities')||'null'); if (Array.isArray(c) && c.length) return c; }catch(e){} return DEFAULT_CITIES.map(c=>({...c, mix:{...c.mix}})); }
+function citiesSave(c){ try{ localStorage.setItem('cities', JSON.stringify(c)); }catch(e){} }
+let CITIES = citiesLoad();
+function jLoad(){ try{ return JSON.parse(localStorage.getItem('journey')||'{"city":0,"level":0,"done":0}'); }catch(e){ return {city:0,level:0,done:0}; } }
+function jSave(j){ try{ localStorage.setItem('journey', JSON.stringify(j)); }catch(e){} }
+let J = jLoad();
+function jClamp(){ if (J.city >= CITIES.length) J.city = 0; const c=CITIES[J.city]; if (J.level >= c.levels) J.level = 0; }
+function hash32(s){ let h=2166136261; for (const ch of s){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+function pickLen(city, lvl){   // word length for this level from the city's % mix, deterministic
+  const c=CITIES[city], r=hash32(c.name+'|'+lvl)%100; let acc=0;
+  for (const L of [3,4,5]){ acc += +c.mix[L]||0; if (r < acc) return L; }
+  return 4;
+}
+function journeyPuzzle(){
+  jClamp();
+  const Lw = pickLen(J.city, J.level), pool = ENDLESS.filter(q=>q.s.length===Lw);
+  const use = pool.length ? pool : ENDLESS;
+  return use[hash32('lvl|'+CITIES[J.city].name+'|'+J.level+'|'+J.city) % use.length];
+}
+function journeyLabel(){ jClamp(); return CITIES[J.city].name + ' · ' + (J.level+1) + '/' + CITIES[J.city].levels; }
+function applyTheme(){ document.body.dataset.theme = DAILY ? '' : String(J.city % 10); }
+function journeyAdvance(){   // called on NEXT PUZZLE; returns true when a new city was reached
+  J.level++; J.done=(J.done||0)+1;
+  let arrived=false;
+  if (J.level >= CITIES[J.city].levels){ J.level=0; J.city=(J.city+1)%CITIES.length; arrived=true; setTimeout(()=>coinsAdd(COINS.cityArrive), 700); }
+  jSave(J); return arrived;
+}
+function showArrival(){ const c=CITIES[J.city]; $('#arrCity').textContent=c.name; $('#arrNote').textContent=c.levels+' LEVELS AHEAD'; document.body.classList.add('arriving'); $('#arrive').classList.add('show'); parts=[]; fireConfetti(1); }
+onTap($('#arrGo'), ()=>{ $('#arrive').classList.remove('show'); document.body.classList.remove('arriving'); parts=[]; });
+
+/* ---------------- Daily streak ---------------- */
+function stLoad(){ try{ return JSON.parse(localStorage.getItem('streak')||'{"cur":0,"best":0,"last":""}'); }catch(e){ return {cur:0,best:0,last:''}; } }
+function stSave(s){ try{ localStorage.setItem('streak', JSON.stringify(s)); }catch(e){} }
+function yesterdayKey(){ const d=dailyDate(); d.setDate(d.getDate()-1); return fmtKey(d); }
+function streakBump(){ const s=stLoad(), today=dayKey(); if (s.last===today) return s; s.cur = (s.last===yesterdayKey()) ? s.cur+1 : 1; s.best=Math.max(s.best,s.cur); s.last=today; stSave(s);
+  const ms={3:COINS.streak3,7:COINS.streak7,14:COINS.streak14,30:COINS.streak30}; if (ms[s.cur]) setTimeout(()=>coinsAdd(ms[s.cur]), 1400); return s; }
+
+/* ---------------- Main menu ---------------- */
+function openMenu(){
+  jClamp(); coinsRender(); adRender();
+  if (W.loginDay!==dayKey()){ W.loginDay=dayKey(); wSave(); setTimeout(()=>coinsAdd(COINS.login, $('#menuCoin')), 500); }   // daily login bonus
+  const s=stLoad(); const dailyDone_ = dailyDone();
+  $('#journeySub').textContent = (J.done ? CITIES[J.city].name+' · LEVEL '+(J.level+1)+'/'+CITIES[J.city].levels : 'START YOUR TRIP · '+CITIES[0].name);
+  $('#dailySub').textContent = (s.cur ? '🔥 '+s.cur+' DAY STREAK' : "TODAY'S 5-LETTER PUZZLE") + (dailyDone_ ? ' · DONE ✓' : '');
+  $('#playDaily').classList.toggle('done', dailyDone_);
+  document.body.dataset.theme=''; document.body.classList.remove('daily');
+  $('#menu').classList.add('show'); clearInterval(countT);
+}
+function closeMenu(){ $('#menu').classList.remove('show'); document.body.focus(); }
+onTap($('#playJourney'), ()=>{ DAILY=false; parts=[]; closeMenu(); const fresh = !J.done && J.level===0; E.load(); if (fresh) showArrival(); });
+onTap($('#playDaily'),   ()=>{ DAILY=true;  parts=[]; closeMenu(); E.load(); });
+onTap($('#menuBtn'), openMenu);
+onTap($('#menuHelp'), ()=>{ closeMenu(); openTut(); });
+
+/* ---------------- City editor ---------------- */
+let ED = [];
+function edRender(){
+  const list=$('#edList'); list.innerHTML='';
+  ED.forEach((c,i)=>{
+    const div=document.createElement('div'); div.className='city';
+    const sum=(+c.mix[3]||0)+(+c.mix[4]||0)+(+c.mix[5]||0);
+    div.innerHTML='<div class="r1"><span class="idx">'+(i+1)+'</span><input class="name" data-i="'+i+'" data-k="name" value="'+c.name.replace(/"/g,'&quot;')+'" placeholder="City name" maxlength="14"><button class="del" data-i="'+i+'" aria-label="Remove">✕</button></div>'
+      +'<div class="r2"><label>LEVELS<input class="num" type="number" min="1" max="99" inputmode="numeric" data-i="'+i+'" data-k="levels" value="'+c.levels+'"></label>'
+      +'<label>3-LETTER %<input class="num" type="number" min="0" max="100" inputmode="numeric" data-i="'+i+'" data-k="3" value="'+(+c.mix[3]||0)+'"></label>'
+      +'<label>4-LETTER %<input class="num" type="number" min="0" max="100" inputmode="numeric" data-i="'+i+'" data-k="4" value="'+(+c.mix[4]||0)+'"></label>'
+      +'<label>5-LETTER %<input class="num" type="number" min="0" max="100" inputmode="numeric" data-i="'+i+'" data-k="5" value="'+(+c.mix[5]||0)+'"></label>'
+      +'<div class="sum'+(sum===100?'':' bad')+'">mix total '+sum+'%'+(sum===100?'':' — should be 100')+'</div></div>';
+    list.appendChild(div);
+  });
+}
+$('#edList').addEventListener('input', e=>{ const el=e.target; const i=+el.dataset.i, k=el.dataset.k; if (isNaN(i)) return;
+  if (k==='name') ED[i].name=el.value.toUpperCase(); else if (k==='levels') ED[i].levels=Math.max(1,Math.min(99,parseInt(el.value)||1)); else ED[i].mix[k]=Math.max(0,Math.min(100,parseInt(el.value)||0));
+  if (k!=='name'){ const c=ED[i]; const sum=(+c.mix[3]||0)+(+c.mix[4]||0)+(+c.mix[5]||0); const s=el.closest('.city').querySelector('.sum'); s.textContent='mix total '+sum+'%'+(sum===100?'':' — should be 100'); s.classList.toggle('bad', sum!==100); } });
+$('#edList').addEventListener('click', e=>{ const b=e.target.closest('.del'); if(!b) return; if (ED.length<=1) return; ED.splice(+b.dataset.i,1); edRender(); });
+onTap($('#edAdd'), ()=>{ ED.push({name:'CITY '+(ED.length+1), levels:10, mix:{3:30,4:40,5:30}}); edRender(); setTimeout(()=>{ const inputs=$('#edList').querySelectorAll('.name'); inputs[inputs.length-1].focus(); }, 50); });
+onTap($('#edReset'), ()=>{ ED=DEFAULT_CITIES.map(c=>({...c, mix:{...c.mix}})); COINS={...COINS_DEFAULT}; edRender(); edCoinsRender(); });
+function edCoinsRender(){ const g=$('#edCoins'); g.innerHTML=Object.keys(COINS_DEFAULT).map(k=>'<label>'+COIN_LABELS[k]+'<input class="num" type="number" min="0" inputmode="numeric" data-ck="'+k+'" value="'+COINS[k]+'"></label>').join(''); }
+function openEditor(){ ED=CITIES.map(c=>({name:c.name, levels:c.levels, mix:{...c.mix}})); edRender(); edCoinsRender(); $('#editor').classList.add('show'); }
+function closeEditor(){ $('#editor').classList.remove('show'); }
+onTap($('#settingsBtn'), openEditor);
+let wipeArm=null;
+onTap($('#edWipe'), ()=>{   // two taps: arm, then confirm within 3 s
+  const b=$('#edWipe');
+  if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='TAP AGAIN TO CONFIRM'; clearTimeout(wipeArm); wipeArm=setTimeout(()=>{ b.classList.remove('arm'); b.textContent='⟲ RESET PROGRESS'; }, 3000); return; }
+  clearTimeout(wipeArm);
+  try{ ['wallet','journey','streak','dailyRec','reg'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  W=wLoad(); J=jLoad(); DAILY=false; E.replay=false; coinsRender();
+  b.classList.remove('arm'); b.textContent='✓ RESET DONE'; setTimeout(()=>{ b.textContent='⟲ RESET PROGRESS'; }, 1500);
+  E.load(); closeEditor(); openMenu();
+});
+onTap($('#edClose'), closeEditor);
+onTap($('#edSave'), ()=>{
+  ED.forEach(c=>{ c.name=(c.name||'CITY').trim().toUpperCase()||'CITY'; let s=(+c.mix[3]||0)+(+c.mix[4]||0)+(+c.mix[5]||0); if (s<=0){ c.mix={3:34,4:33,5:33}; s=100; } if (s!==100){ for (const L of [3,4,5]) c.mix[L]=Math.round((+c.mix[L]||0)*100/s); const d=100-(c.mix[3]+c.mix[4]+c.mix[5]); c.mix[4]+=d; } });
+  CITIES=ED.map(c=>({name:c.name, levels:c.levels, mix:{...c.mix}})); citiesSave(CITIES); jClamp(); jSave(J);
+  $('#edCoins').querySelectorAll('input').forEach(i=>{ COINS[i.dataset.ck]=Math.max(0, parseInt(i.value)||0); }); try{ localStorage.setItem('coinsCfg', JSON.stringify(COINS)); }catch(e){}
+  closeEditor(); openMenu();
+});
+
+
+/* ---------------- Coins: config (editable), wallet, animations ---------------- */
+const COINS_DEFAULT = { start:100, level:10, perfect:10, noHint:5, daily:30, dailyPerfect:20, cityArrive:50, login:10,
+                        streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, adsPerDay:3, adCooldownMin:10 };
+const COIN_LABELS = { start:'START BALANCE', level:'LEVEL DONE', perfect:'PERFECT BONUS', noHint:'NO-HINT BONUS', daily:'DAILY DONE', dailyPerfect:'DAILY PERFECT', cityArrive:'NEW CITY', login:'DAILY LOGIN',
+                      streak3:'STREAK 3', streak7:'STREAK 7', streak14:'STREAK 14', streak30:'STREAK 30', hint:'HINT COST', hint2:'2ND HINT COST', restart:'RESTART COST', freeHintsPerDay:'FREE HINTS / DAY', hintCooldownMin:'FREE HINT WAIT (MIN)', adReward:'AD REWARD', adsPerDay:'ADS / DAY', adCooldownMin:'AD WAIT (MIN)' };
+function coinsCfgLoad(){ try{ const c=JSON.parse(localStorage.getItem('coinsCfg')||'null'); if (c) return {...COINS_DEFAULT, ...c}; }catch(e){} return {...COINS_DEFAULT}; }
+let COINS = coinsCfgLoad();
+function wLoad(){ try{ const w=JSON.parse(localStorage.getItem('wallet')||'null'); if (w) return w; }catch(e){} return {coins:COINS.start, freeDay:'', freeUsed:0, loginDay:'', coolUntil:0, perf:{}}; }
+function wSave(){ try{ localStorage.setItem('wallet', JSON.stringify(W)); }catch(e){} }
+let W = wLoad();
+function coinsRender(){ $('#coinVal').textContent=W.coins; $('#menuCoinVal').textContent=W.coins; }
+function coinFly(n, anchor){   // floating +N / −N next to a coin pill
+  const el=anchor||$('#coinPill'); const r=el.getBoundingClientRect();
+  const f=document.createElement('div'); f.className='fly'+(n<0?' neg':''); f.textContent=(n>0?'+':'−')+Math.abs(n)+' 🪙';
+  f.style.left=(r.left+r.width/2-24)+'px'; f.style.top=(r.top-6)+'px'; document.body.appendChild(f); setTimeout(()=>f.remove(),1200);
+}
+function coinsAdd(n, anchor){ if(!n) return; W.coins=Math.max(0, W.coins+n); wSave(); coinsRender();
+  const pills=[$('#coinPill'),$('#menuCoin')]; pills.forEach(p=>{ p.classList.remove('bump','minus'); void p.offsetWidth; p.classList.add('bump'); if(n<0) p.classList.add('minus'); setTimeout(()=>p.classList.remove('minus'),700); });
+  coinFly(n, anchor); }
+function freeHintLeft(){ if (W.freeDay!==dayKey()){ W.freeDay=dayKey(); W.freeUsed=0; wSave(); } return Math.max(0, COINS.freeHintsPerDay - W.freeUsed); }
+function hintPrice(){ if (freeHintLeft()>0 && hintsUsed===0) return 0; return hintsUsed===0 ? COINS.hint : COINS.hint2; }
+function restartPrice(){ if (solved || !E.words.length) return 0; return COINS.restart; }
+function costsRender(){
+  const hc=$('#hintCost'), hp=hintPrice(); hc.textContent = hp===0 ? 'FREE' : hp; hc.classList.toggle('free', hp===0); hc.classList.toggle('none', solved);
+  const rc=$('#restartCost'), rp=restartPrice(); rc.textContent=rp; rc.classList.toggle('none', rp===0);
+}
+function hopEndMs(){ return (60+(L-1)*45+340) + 120 + (L-1)*70 + 620; }   // fall + pause + staggered hop
+let earnT=[];
+function earnShow(parts, startDelay=0){   // each reward floats up and fades, one after another; coins land in the pill as each one disappears
+  const el=$('#earnLbl'); earnT.forEach(clearTimeout); earnT=[]; el.innerHTML=''; el.classList.remove('show');
+  if (!parts.length) return;
+  earnT.push(setTimeout(()=>el.classList.add('show'), startDelay));
+  parts.forEach((p,i)=>{ const s=document.createElement('div'); s.className='ei'; s.innerHTML=p[1]+' <b>+'+p[0]+'</b>'; s.style.animationDelay=(i*1600)+'ms'   /* the container is revealed at startDelay, so items are relative to that */; el.appendChild(s);
+    earnT.push(setTimeout(()=>coinsAdd(p[0]), startDelay+i*1600+1300)); });
+  earnT.push(setTimeout(()=>{ el.classList.remove('show'); el.innerHTML=''; }, startDelay+parts.length*1600+200));
+}
+/* low-balance dialog: the hint is never blocked — it's free after a short wait */
+let cdT=null;
+function showCoinDlg(price){
+  const dlg=$('#coinDlg'); $('#cdTitle').textContent='Hint costs '+price+' · you have '+W.coins;
+  const go=$('#cdGo'); dlg.classList.add('show'); clearInterval(cdT); adRender();
+  const tick=()=>{ const left=Math.max(0, Math.ceil((W.coolUntil-Date.now())/1000));
+    if (left>0){ go.disabled=true; go.textContent='FREE HINT IN '+String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0'); $('#cdNote').textContent='Earn coins by finishing levels — or wait and take this one free.'; }
+    else { go.disabled=false; go.textContent='TAKE A FREE HINT'; $('#cdNote').textContent='Earn coins by finishing levels. This hint is on the house.'; } };
+  tick(); cdT=setInterval(tick,1000);
+}
+function hideCoinDlg(){ $('#coinDlg').classList.remove('show'); clearInterval(cdT); }
+onTap($('#cdNo'), hideCoinDlg);
+onTap($('#cdGo'), ()=>{ if ($('#cdGo').disabled) return; hideCoinDlg(); W.coolUntil=Date.now()+COINS.hintCooldownMin*60000; wSave(); doHint(); });
+function hintPaid(){   // wrapper: pay (or use the free one) before revealing
+  if (solved || DAILY) return;
+  const price=hintPrice();
+  if (price===0){ W.freeUsed++; wSave(); doHint(); return; }
+  if (W.coins>=price){ coinsAdd(-price, hintBtn); doHint(); return; }
+  showCoinDlg(price);
+}
+function doHint(){ hint(); costsRender(); }
+/* ---------------- Rewarded ad (stub): capped per day, cooldown between views, pays COINS.adReward ---------------- */
+function adsLeft(){ if (W.adDay!==dayKey()){ W.adDay=dayKey(); W.adsUsed=0; wSave(); } return Math.max(0, COINS.adsPerDay-(W.adsUsed||0)); }
+function adReady(){ return adsLeft()>0 && (W.adCool||0) <= Date.now(); }
+function adRender(){
+  const left=adsLeft(), wait=Math.max(0, Math.ceil(((W.adCool||0)-Date.now())/60000));
+  [['#adBtnMenu','#adRew1','#adLeft1'],['#adBtnDlg','#adRew2','#adLeft2']].forEach(([b,r,l])=>{ $(b).classList.toggle('off', left===0); $(r).textContent='+'+COINS.adReward+' 🪙'; $(l).textContent = wait>0 ? 'READY IN '+wait+' MIN' : left+' LEFT'+(b==='#adBtnMenu'?' TODAY':''); });
+}
+let adT=null;
+function watchAd(anchor){
+  if (!adReady()) { adRender(); return; }
+  // >>> real integration: call the rewarded-ad SDK here and run adPayout() in its "reward earned" callback <<<
+  const f=$('#adFake'); f.classList.add('show'); $('#adBar').style.width='0'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ $('#adBar').style.width='100%'; }));
+  clearTimeout(adT); adT=setTimeout(()=>{ f.classList.remove('show'); adPayout(anchor); }, 3200);
+}
+function adPayout(anchor){ W.adsUsed=(W.adsUsed||0)+1; W.adCool=Date.now()+COINS.adCooldownMin*60000; wSave(); adRender(); coinsAdd(COINS.adReward, anchor); hideCoinDlg(); costsRender(); }
+onTap($('#adBtnMenu'), ()=>watchAd($('#menuCoin')));
+onTap($('#adBtnDlg'), ()=>watchAd($('#coinPill')));
+
+
+/* ---------------- Tracking: anonymous events → Google Sheet (Apps Script web app) ---------------- */
+const TRACK = { url:'https://script.google.com/macros/s/AKfycbxsll_y8L5zr7bIcHjux1U5Vl7jZ-Xa3o5jW_lsjVIxuy1IrKTcKXe6FK4X1C0HHM7C/exec', key:'advith', on:true };
+if (!W.pid){ W.pid = Math.random().toString(36).slice(2,8).toUpperCase(); wSave(); }
+let evq=[]; try{ evq=JSON.parse(localStorage.getItem('evq')||'[]'); }catch(e){}
+function evqSave(){ try{ localStorage.setItem('evq', JSON.stringify(evq.slice(-200))); }catch(e){} }
+const sessionStart = Date.now(); let levelStart = Date.now(), levelOpen = false;
+function track(event, d={}){
+  if (!TRACK.on) return;
+  const ev = { t:Date.now(), player:W.pid, name:W.name||'', event, mode: DAILY?'daily':'journey', city: DAILY?'DAILY':(CITIES[J.city]||{}).name||'', level: DAILY?'':J.level+1,
+               word: P ? P.s+'>'+P.t : '', coins: W.coins, ...d };
+  evq.push(ev); evqSave(); if (evq.length>=5) flush();
+}
+let flushing=false;
+function flush(useBeacon){
+  if (!evq.length || !TRACK.url) return;
+  const batch = evq.splice(0, 40); evqSave();
+  const body = JSON.stringify({ key:TRACK.key, events:batch });
+  try{
+    if (useBeacon && navigator.sendBeacon){ navigator.sendBeacon(TRACK.url, new Blob([body], {type:'text/plain'})); return; }
+    fetch(TRACK.url, { method:'POST', mode:'no-cors', body, keepalive:true }).catch(()=>{ evq.unshift(...batch); evqSave(); });   // opaque response: treat as delivered
+  }catch(e){ evq.unshift(...batch); evqSave(); }
+}
+setInterval(flush, 8000);
+function levelSecs(){ return Math.round((Date.now()-levelStart)/1000); }
+function levelAbandonIfOpen(){ if (levelOpen && !solved && (E.words.length>0 || levelSecs()>=10)) track('level_abandon', { steps:E.words.length, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs() }); levelOpen=false; }
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden'){ levelAbandonIfOpen(); track('session_end', { seconds:Math.round((Date.now()-sessionStart)/1000) }); flush(true); } });
+/* nickname (once) */
+function askName(){ if (W.name) return; $('#nameDlg').classList.add('show'); setTimeout(()=>$('#nameIn').focus(), 100); }
+function saveName(){ const v=$('#nameIn').value.trim().slice(0,14); W.name = v || ('PLAYER-'+W.pid.slice(0,4)); wSave(); $('#nameDlg').classList.remove('show'); track('session_start', { extra:{ua:navigator.userAgent.slice(0,60), w:innerWidth, h:innerHeight} }); }
+onTap($('#nameGo'), saveName);
+$('#nameIn').addEventListener('keydown', e=>{ if (e.key==='Enter') saveName(); });
+/* stats view (reads the sheet back) */
+async function loadStats(){
+  const box=$('#stats'); box.innerHTML='<div class="empty">Loading…</div>';
+  try{
+    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)); const j = await r.json();
+    if (!j.ok) throw new Error(j.error||'error');
+    const H=j.headers, rows=j.rows.slice(0,14);
+    const short={'Date':'DATE','DAU':'DAU','New Users':'NEW','Returning Users':'RET','Sessions / User':'S/U','Avg Session (min)':'MIN','Levels Played':'PLAY','Levels Completed':'DONE','Levels Abandoned':'QUIT','D1 Retention':'D1','D7 Retention':'D7','D30 Retention':'D30'};
+    let html='<div class="h">DAILY METRICS · LAST '+rows.length+' DAYS</div>';
+    html += rows.length ? '<div style="overflow-x:auto"><table><tr>'+H.map(h=>'<th>'+(short[h]||h)+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map((c,i)=>'<td>'+(i===0? String(c).slice(5) : (c===''?'–':c))+'</td>').join('')+'</tr>').join('')+'</table></div>' : '<div class="empty">No data yet.</div>';
+    html += '<div class="empty" style="font-size:10px">DATE mm-dd · NEW first-time players · RET returning · S/U sessions per user · MIN avg session minutes · QUIT levels abandoned · D1/D7/D30 % of that day\'s new players back after 1/7/30 days</div>';
+    html += '<button class="add" id="statsLoad" type="button">RELOAD</button>';
+    box.innerHTML=html; onTap($('#statsLoad'), loadStats);
+  }catch(e){ box.innerHTML='<div class="empty">Could not load: '+(e.message||e)+'</div><button class="add" id="statsLoad" type="button">RETRY</button>'; onTap($('#statsLoad'), loadStats); }
+}
+onTap($('#statsLoad'), loadStats);
+
+/* ---------------- Tutorial: a scripted ghost player types CAT → BAT → BAD → BED ---------------- */
+const UPWARD = false;   // ladder builds top-down (set true to test the bottom-up variant)
+document.body.classList.toggle('up', UPWARD);
+let tutOpen = false, tutRun = 0;
+const TUT_LESSONS = [ {s:'CAT', t:'BED', steps:[['BAT',0],['BAD',2],['BED',1]]},
+                      {s:'SUN', t:'CAN', steps:[['FUN',0],['FAN',1],['CAN',0]]},
+                      {s:'DOG', t:'BIT', steps:[['DIG',1],['BIG',0],['BIT',2]]},
+                      {s:'SAD', t:'JOY', steps:[['SAY',2],['SOY',1],['JOY',0]]},
+                      {s:'SICK', t:'WELL', steps:[['SILK',2],['SILL',3],['WILL',0],['WELL',1]]},
+                      {s:'CAT', t:'DOG', steps:[['HAT',0],['HOT',1],['DOT',0],['DOG',2]]},
+                      {s:'FIRE', t:'COLD', steps:[['FORE',1],['CORE',0],['CORD',3],['COLD',2]]} ];   // played one after another, then loop
+(function buildTutKb(){ const kb=$('#tutKb'); ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'].forEach(r=>{ const row=document.createElement('div'); row.className='krow';
+  for (const ch of r){ const k=document.createElement('div'); k.className='key'; k.textContent=ch; k.dataset.k=ch; row.appendChild(k); } kb.appendChild(row); }); })();
+const sleep = ms => new Promise(r=>setTimeout(r, ms));
+function tutRow(word, from, pos){   // a player row: letters copied from the row above, the changed one blue
+  const row=document.createElement('div'); row.className='row';
+  [...word].forEach((ch,i)=>{ const c=document.createElement('div'); c.className='cell slot '+(i===pos?'changed':'same'); c.textContent=ch; row.appendChild(c); });
+  const st=document.createElement('div'); st.className='status'; st.textContent='✓'; row.appendChild(st); return row;
+}
+async function tutPlay(){
+  const run = ++tutRun, board=$('#tutBoard'), cap=$('#tutCap');
+  const alive = ()=> tutOpen && run===tutRun;
+  let li = 0;
+  while (alive()){
+    const LS = TUT_LESSONS[li % TUT_LESSONS.length]; li++;
+    const TUT_STEPS = LS.steps;
+    board.innerHTML=''; cap.textContent=''; board.style.setProperty('--n', LS.s.length);   // 3- or 4-letter lesson
+    board.appendChild(fixedRow(LS.s));
+    const arrow=document.createElement('div'); arrow.className='arrow'; arrow.textContent='↓'; board.appendChild(arrow);
+    const target=document.createElement('div'); target.className='row target';
+    target.innerHTML='<div class="tlabel">TARGET</div>'+[...LS.t].map(ch=>'<div class="cell plain">'+ch+'</div>').join('');
+    board.appendChild(target);
+    let prev=LS.s;
+    // three empty rows between start and target, filled one by one
+    const rowsEl = TUT_STEPS.map(()=>{ const row=document.createElement('div'); row.className='row';
+      for (let i=0;i<LS.s.length;i++){ const c=document.createElement('div'); c.className='cell slot empty'; row.appendChild(c); }
+      const st=document.createElement('div'); st.className='status'; row.appendChild(st); board.insertBefore(row, target); return row; });
+    cap.textContent='Start word on top, target at the bottom.'; await sleep(1200); if(!alive()) return;
+    for (const [k,[word,pos]] of TUT_STEPS.entries()){
+      // 1. cursor on the letter that will change
+      const row=rowsEl[k], st=row.querySelector('.status');
+      const cells=row.querySelectorAll('.cell');
+      cells.forEach((c,i)=>{ c.textContent=prev[i]; });
+      cells[pos].classList.add('cursor');
+      await sleep(900); if(!alive()) return;
+      // 2. ghost finger presses the key
+      const key=$('#tutKb .key[data-k="'+word[pos]+'"]'); key.classList.add('hit'); await sleep(220); key.classList.remove('hit'); if(!alive()) return;
+      // 3. letter lands, others auto-fill from the row above
+      cells[pos].classList.remove('cursor','empty'); cells[pos].classList.add('changed','pop'); cells[pos].textContent=word[pos];
+      if (k>0){ const prevCells=rowsEl[k-1].querySelectorAll('.cell'); setTimeout(()=>prevCells.forEach(c=>c.classList.remove('goal')), 120+420); }   // previous row back to plain once its letters have landed below
+      const fin = word===LS.t;
+      cells[pos].classList.toggle('goal', !fin && word[pos]===LS.t[pos]); cells[pos].classList.toggle('hit', fin);
+      const hopBase = 120 + (LS.s.length-1)*45 + 340 + 120;   // after the last falling letter has landed
+      if (fin){ cells[pos].classList.add('hop'); cells[pos].style.animationDelay='0ms, '+(hopBase+pos*70)+'ms'; }
+      if (word===LS.t){ target.style.visibility='hidden'; }   // target reached: grey BED goes, particles burst
+      await sleep(120); if(!alive()) return;
+      cells.forEach((c,i)=>{ if(i!==pos){ c.classList.remove('empty'); c.classList.add('same','drop'); c.classList.toggle('goal', !fin && word[i]===LS.t[i]); c.classList.toggle('hit', fin); if (fin){ c.classList.add('hop'); c.style.animationDelay=(i*45)+'ms, '+(hopBase-120+i*70)+'ms'; } else c.style.animationDelay=(i*45)+'ms'; } });   // green letters fall already green; the final word lands green   // letters fall from the row above, like the real game
+      await sleep(200); if(!alive()) return;
+      // 4. ✓
+      st.classList.add('ok','show'); st.textContent='✓';
+      prev=word; await sleep(1000); if(!alive()) return;
+    }
+    // finish: last row flashes green briefly, then the board resets and the loop replays
+    cap.textContent='Done in 3 steps. Your turn!';
+    await sleep(700); if(!alive()) return;
+    cap.classList.add('dim'); await sleep(200); cap.classList.remove('dim');
+  }
+}
+function sparkle(row){   // small particle burst around a row (Web Animations, no canvas)
+  const colors=['#2ebd6b','#e5cf7a','#4f6bff','#ff6b8a','#ffa94d','#fff'];
+  const w=row.offsetWidth, h=row.offsetHeight;
+  for (let i=0;i<26;i++){
+    const s=document.createElement('span'); s.className='spark'; s.style.background=colors[i%colors.length];
+    const sz=4+Math.random()*5; s.style.width=s.style.height=sz+'px'; if(i%3===0) s.style.borderRadius='2px';
+    const a=(i/26)*Math.PI*2 + Math.random()*.4, d=Math.max(w,h)*.45 + Math.random()*70;
+    const x=Math.cos(a)*d, y=Math.sin(a)*d, rot=Math.random()*540-270;
+    row.appendChild(s);
+    s.animate([{transform:'translate(-50%,-50%) scale(.4)',opacity:1},{transform:`translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rot}deg) scale(1)`,opacity:0}],
+              {duration:600+Math.random()*350,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'}).onfinish=()=>s.remove();
+  }
+}
+function openTut(){ tutOpen=true; $('#tut').classList.add('show'); tutPlay(); }
+function closeTut(){ tutOpen=false; tutRun++; $('#tut').classList.remove('show'); try{ localStorage.setItem('tutSeen','1'); }catch(e){} document.body.focus(); askName(); }
+onTap($('#gotIt'), closeTut);
+onTap($('#helpBtn'), openTut);
+
+TRACK.on=false; loadPuzzle(); TRACK.on=true;   // the board preloaded behind the menu is not a level start
+openTut(); openMenu();   // launch: rules, then the main menu (GOT IT reveals it)
+if (W.name) track('session_start', { extra:{ua:navigator.userAgent.slice(0,60), w:innerWidth, h:innerHeight} });
+(function fitFooter(){ const m=document.querySelector('main'); const f=$('#footer');
+  const apply=()=>{ m.style.paddingBottom=(f.offsetHeight+16)+'px'; };
+  new ResizeObserver(apply).observe(f); apply(); })();
+document.body.focus();
+document.addEventListener('pointerdown', ()=>{ if(document.activeElement!==document.body) document.body.focus(); });
+window.addEventListener('load', ()=>document.body.focus());
+</script>
+</body>
+</html>
