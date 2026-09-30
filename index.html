@@ -260,7 +260,7 @@ header .level{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #coinDlg .no{background:transparent;color:var(--muted)}
 /* editor: coins section */
 #editor .sec{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--muted);margin:22px 0 10px}
-#editor .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 1px var(--line)}
+#editor .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 8px rgba(30,35,60,.06),inset 0 0 0 1px var(--line)}
 #editor .cgrid label{display:flex;flex-direction:column;gap:4px;font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--muted)}
 
 /* ---------------- Main menu ---------------- */
@@ -397,7 +397,7 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
   <div class="sec">COINS</div>
   <div class="cgrid" id="edCoins"></div>
   <button class="reset" id="edReset">Reset to default cities</button>
-  <div class="sec">STATS · LAST 14 DAYS</div>
+  <div class="sec">PLAYERS</div>
   <div class="stats" id="stats"><button class="add" id="statsLoad" type="button">LOAD STATS</button></div>
   <div class="sec">PLAYER DATA</div>
   <button class="danger" id="edWipe" type="button">⟲ RESET PROGRESS</button>
@@ -681,7 +681,7 @@ const E = {
     $('#subLbl').textContent = 'Change ONE letter at a time to reach the target word.';
     $('#fillLbl').textContent = 'REACH THE TARGET · NO STEP LIMIT';
     setMsg(''); document.querySelector('main').scrollTop=0; E.render();
-    if (!$('#menu').classList.contains('show')) track(E.replay ? 'level_retry' : 'level_start', { par:P.par });
+    if (!$('#menu').classList.contains('show')) track('level_start', { par:P.par });
   },
   last(){ for (let i=E.words.length-1;i>=0;i--) if(!E.badIdx.has(i)) return E.words[i]; return P.s; },
   baseFor(i){ for (let k=i-1;k>=0;k--) if(!E.badIdx.has(k)) return E.words[k]; return P.s; },
@@ -928,7 +928,7 @@ document.addEventListener('keydown', e=>{
 });
 onTap(hintBtn, hintPaid);
 const restartLevel = ()=>{ parts=[]; if (DAILY){ dailyClear(); } E.replay=true;   /* same level again: allowed during the cooldown, never counts toward it */ if(MODE==='endless'){ E.load(); } else { loadPuzzle(); } };
-onTap($('#restartBtn'), ()=>{ const p=restartPrice(); track('restart', { steps:E.words.length, wrong:E.misses, seconds:levelSecs(), extra:{paid:p>0&&W.coins>=p?p:0} }); if (p>0 && W.coins>=p) coinsAdd(-p, $('#restartBtn')); restartLevel(); });   // header restart costs coins (free if you can't afford it)
+onTap($('#restartBtn'), ()=>{ const p=restartPrice(); if (p>0 && W.coins>=p) coinsAdd(-p, $('#restartBtn')); restartLevel(); });   // header restart costs coins (free if you can't afford it)
 onTap($('#homeBtn'), openMenu);
 onTap($('#retryBtn'), restartLevel);
 onTap(nextBtn, nextPuzzle);
@@ -1013,7 +1013,7 @@ function applyTheme(){ document.body.dataset.theme = DAILY ? '' : String(J.city 
 function journeyAdvance(){   // called on NEXT PUZZLE; returns true when a new city was reached
   J.level++; J.done=(J.done||0)+1;
   let arrived=false;
-  if (J.level >= CITIES[J.city].levels){ J.level=0; J.city=(J.city+1)%CITIES.length; arrived=true; setTimeout(()=>coinsAdd(COINS.cityArrive), 700); track('city_arrive', { extra:{city:CITIES[J.city].name} }); }
+  if (J.level >= CITIES[J.city].levels){ J.level=0; J.city=(J.city+1)%CITIES.length; arrived=true; setTimeout(()=>coinsAdd(COINS.cityArrive), 700); }
   jSave(J); return arrived;
 }
 function showArrival(){ const c=CITIES[J.city]; $('#arrCity').textContent=c.name; $('#arrNote').textContent=c.levels+' LEVELS AHEAD'; document.body.classList.add('arriving'); $('#arrive').classList.add('show'); parts=[]; fireConfetti(1); }
@@ -1141,7 +1141,7 @@ function hintPaid(){   // wrapper: pay (or use the free one) before revealing
   if (solved || DAILY) return;
   const price=hintPrice();
   if (price===0){ W.freeUsed++; wSave(); doHint(); return; }
-  if (W.coins>=price){ coinsAdd(-price, hintBtn); track('hint_buy', { extra:{price} }); doHint(); return; }
+  if (W.coins>=price){ coinsAdd(-price, hintBtn); doHint(); return; }
   showCoinDlg(price);
 }
 function doHint(){ hint(); costsRender(); }
@@ -1159,13 +1159,13 @@ function watchAd(anchor){
   const f=$('#adFake'); f.classList.add('show'); $('#adBar').style.width='0'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ $('#adBar').style.width='100%'; }));
   clearTimeout(adT); adT=setTimeout(()=>{ f.classList.remove('show'); adPayout(anchor); }, 3200);
 }
-function adPayout(anchor){ track('ad_watch', { extra:{reward:COINS.adReward} }); W.adsUsed=(W.adsUsed||0)+1; W.adCool=Date.now()+COINS.adCooldownMin*60000; wSave(); adRender(); coinsAdd(COINS.adReward, anchor); hideCoinDlg(); costsRender(); }
+function adPayout(anchor){ W.adsUsed=(W.adsUsed||0)+1; W.adCool=Date.now()+COINS.adCooldownMin*60000; wSave(); adRender(); coinsAdd(COINS.adReward, anchor); hideCoinDlg(); costsRender(); }
 onTap($('#adBtnMenu'), ()=>watchAd($('#menuCoin')));
 onTap($('#adBtnDlg'), ()=>watchAd($('#coinPill')));
 
 
 /* ---------------- Tracking: anonymous events → Google Sheet (Apps Script web app) ---------------- */
-const TRACK = { url:'https://script.google.com/macros/s/AKfycbz1848llTUWYLx7aIPxzActVc2h80-cFTfEAIRlty_EEuYrjmCUG_uy7lalMkuIZyHN/exec', key:'advith', on:true };
+const TRACK = { url:'https://script.google.com/macros/s/AKfycbxsll_y8L5zr7bIcHjux1U5Vl7jZ-Xa3o5jW_lsjVIxuy1IrKTcKXe6FK4X1C0HHM7C/exec', key:'advith', on:true };
 if (!W.pid){ W.pid = Math.random().toString(36).slice(2,8).toUpperCase(); wSave(); }
 let evq=[]; try{ evq=JSON.parse(localStorage.getItem('evq')||'[]'); }catch(e){}
 function evqSave(){ try{ localStorage.setItem('evq', JSON.stringify(evq.slice(-200))); }catch(e){} }
@@ -1199,25 +1199,13 @@ $('#nameIn').addEventListener('keydown', e=>{ if (e.key==='Enter') saveName(); }
 async function loadStats(){
   const box=$('#stats'); box.innerHTML='<div class="empty">Loading…</div>';
   try{
-    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&days=14'); const j = await r.json();
+    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)); const j = await r.json();
     if (!j.ok) throw new Error(j.error||'error');
-    const H=j.headers, ix=k=>H.indexOf(k); const rows=j.rows.map(r=>Object.fromEntries(H.map((h,i)=>[h,r[i]])));
-    const players={}; const stuck={};
-    for (const e of rows){
-      const p=players[e.player] ||= {name:e.name||e.player, sessions:0, secs:0, done:0, perfect:0, hints:0, ads:0, last:0, days:new Set()};
-      if (e.name) p.name=e.name; const ts=new Date(e.time).getTime(); p.last=Math.max(p.last,ts); p.days.add(new Date(e.time).toDateString());
-      if (e.event==='session_start') p.sessions++; if (e.event==='session_end') p.secs+=+e.seconds||0;
-      if (e.event==='level_complete'||e.event==='daily_complete'){ p.done++; if (e.steps!=='' && e.par!=='' && +e.steps<=+e.par) p.perfect++; p.hints+=+e.hints||0; }
-      if (e.event==='hint_buy') p.hints++; if (e.event==='ad_watch') p.ads++;
-      if (e.event==='level_abandon'){ const k=e.city+' '+e.level+' ('+e.word+')'; const s=stuck[k] ||= {n:0, secs:0, who:new Set()}; s.n++; s.secs+=+e.seconds||0; s.who.add(e.name||e.player); }
-    }
-    const P_=Object.values(players).sort((a,b)=>b.last-a.last);
-    const fmtT=s=>s>=3600? (s/3600).toFixed(1)+'h' : Math.round(s/60)+'m';
-    let html='<div class="h">PLAYERS · '+P_.length+'</div>';
-    html += P_.length ? '<table><tr><th>NAME</th><th>DAYS</th><th>SESS</th><th>TIME</th><th>DONE</th><th>PERF</th><th>HINTS</th><th>ADS</th><th>LAST</th></tr>'+P_.map(p=>'<tr><td>'+p.name+'</td><td>'+p.days.size+'</td><td>'+p.sessions+'</td><td>'+fmtT(p.secs)+'</td><td>'+p.done+'</td><td>'+p.perfect+'</td><td>'+p.hints+'</td><td>'+p.ads+'</td><td>'+new Date(p.last).toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</td></tr>').join('')+'</table>' : '<div class="empty">No events yet.</div>';
-    const S_=Object.entries(stuck).sort((a,b)=>b[1].n-a[1].n).slice(0,12);
-    html += '<div class="h">WHERE PLAYERS GAVE UP</div>' + (S_.length ? '<table><tr><th>LEVEL</th><th>TIMES</th><th>AVG</th><th>WHO</th></tr>'+S_.map(([k,s])=>'<tr><td>'+k+'</td><td>'+s.n+'</td><td>'+fmtT(s.secs/s.n)+'</td><td>'+[...s.who].slice(0,3).join(', ')+'</td></tr>').join('')+'</table>' : '<div class="empty">Nobody has abandoned a level.</div>');
-    html += '<div class="h">TOTAL EVENTS · '+rows.length+'</div><button class="add" id="statsLoad" type="button">RELOAD</button>';
+    const rows=j.rows;
+    const short=['START','PLAYER','PLAYED','DONE','LAST','PEAK'];
+    let html='<div class="h">PLAYERS · '+rows.length+'</div>';
+    html += rows.length ? '<div style="overflow-x:auto"><table><tr>'+short.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c===''?'–':c)+'</td>').join('')+'</tr>').join('')+'</table></div>' : '<div class="empty">No players yet.</div>';
+    html += '<button class="add" id="statsLoad" type="button">RELOAD</button>';
     box.innerHTML=html; onTap($('#statsLoad'), loadStats);
   }catch(e){ box.innerHTML='<div class="empty">Could not load: '+(e.message||e)+'</div><button class="add" id="statsLoad" type="button">RETRY</button>'; onTap($('#statsLoad'), loadStats); }
 }
