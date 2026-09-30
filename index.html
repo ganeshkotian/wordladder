@@ -1076,8 +1076,9 @@ onTap($('#edWipe'), ()=>{   // two taps: arm, then confirm within 3 s
   clearTimeout(wipeArm);
   try{ ['wallet','journey','streak','dailyRec','reg'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   W=wLoad(); J=jLoad(); DAILY=false; E.replay=false; coinsRender();
+  flush(); W.pid=newPid(); W.name=''; wSave();   // new player identity after a reset
   b.classList.remove('arm'); b.textContent='✓ RESET DONE'; setTimeout(()=>{ b.textContent='⟲ RESET PROGRESS'; }, 1500);
-  E.load(); closeEditor(); openMenu();
+  E.load(); closeEditor(); openMenu(); setTimeout(askName, 300);
 });
 onTap($('#edClose'), closeEditor);
 onTap($('#edSave'), ()=>{
@@ -1166,12 +1167,14 @@ onTap($('#adBtnDlg'), ()=>watchAd($('#coinPill')));
 
 /* ---------------- Tracking: anonymous events → Google Sheet (Apps Script web app) ---------------- */
 const TRACK = { url:'https://script.google.com/macros/s/AKfycbxsll_y8L5zr7bIcHjux1U5Vl7jZ-Xa3o5jW_lsjVIxuy1IrKTcKXe6FK4X1C0HHM7C/exec', key:'advith', on:true };
-if (!W.pid){ W.pid = Math.random().toString(36).slice(2,8).toUpperCase(); wSave(); }
+function newPid(){ return Math.random().toString(36).slice(2,8).toUpperCase(); }
+if (!W.pid){ W.pid = newPid(); wSave(); }
 let evq=[]; try{ evq=JSON.parse(localStorage.getItem('evq')||'[]'); }catch(e){}
 function evqSave(){ try{ localStorage.setItem('evq', JSON.stringify(evq.slice(-200))); }catch(e){} }
 const sessionStart = Date.now(); let levelStart = Date.now(), levelOpen = false;
 function track(event, d={}){
   if (!TRACK.on) return;
+  if (!W.pid){ W.pid=newPid(); wSave(); }
   const ev = { t:Date.now(), player:W.pid, name:W.name||'', event, mode: DAILY?'daily':'journey', city: DAILY?'DAILY':(CITIES[J.city]||{}).name||'', level: DAILY?'':J.level+1,
                word: P ? P.s+'>'+P.t : '', coins: W.coins, ...d };
   evq.push(ev); evqSave(); if (evq.length>=5) flush();
