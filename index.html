@@ -195,6 +195,47 @@ body.daily.beat footer.done #retryBtn{flex:0 0 52px;height:52px;width:auto;min-w
 body.daily footer.done #countdown{flex:0 0 56px;width:100%}
 #homeBtn{display:none;flex:0 0 52px;width:100%;height:52px;border:0;border-radius:16px;background:var(--dark);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;cursor:pointer;box-shadow:0 6px 18px rgba(30,35,60,.22)}
 body.daily footer.done #homeBtn{display:block}
+body.daily footer.done #countdown{display:none!important}
+body.daily footer.done #retryBtn{display:none!important}   /* one attempt per challenge */
+body.daily #restartBtn{display:none!important}
+#lbBtn{display:none;flex:0 0 52px;width:100%;height:52px;border:0;border-radius:16px;background:var(--ok);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;cursor:pointer;box-shadow:0 6px 18px rgba(46,189,107,.3)}
+body.daily footer.done #lbBtn{display:block}
+#lbBtn:active{transform:scale(.98)}
+body.daily .fill{display:block;color:var(--ink);font-variant-numeric:tabular-nums}
+/* ---- Daily challenge screen ---- */
+#chal{position:fixed;inset:0;z-index:92;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:max(14px,env(safe-area-inset-top)) 16px 24px;overflow:auto}
+#chal.show{display:flex}
+#chal .ctop{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center}
+#chal .ctop button{border:0;border-radius:999px;height:42px;padding:0 16px;background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:800;letter-spacing:.06em;box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);cursor:pointer}
+#chal .streak{margin:18px 0 4px;font-size:15px;font-weight:800;letter-spacing:.16em;color:var(--ink)}
+#chal .sbest{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
+#chal .slots{display:flex;gap:8px;width:100%;max-width:420px;margin-bottom:14px}
+#chal .slots button{flex:1;border:0;border-radius:14px;padding:10px 4px 8px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font:inherit;cursor:pointer;color:var(--ink)}
+#chal .slots button .sn{display:block;font-size:11px;font-weight:800;letter-spacing:.12em}
+#chal .slots button .ss{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-top:3px;white-space:nowrap}
+#chal .slots button.on{box-shadow:inset 0 0 0 2px var(--dark)}
+#chal .slots button.live .sn{color:var(--ok)} #chal .slots button.lock{opacity:.55}
+#chal .card{width:100%;max-width:420px;background:#fff;border-radius:22px;padding:18px 16px 16px;box-shadow:0 10px 30px rgba(30,35,60,.1),inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center}
+#chal .k{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--muted)}
+#chal .timer{margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--ink);font-variant-numeric:tabular-nums}
+#chal .timer.closed{color:var(--muted)}
+#chal .w{display:flex;align-items:center;gap:10px;margin:16px 0 14px;max-width:100%}
+#chal .w .wd{display:flex;gap:3px} #chal .w .wd b{display:flex;align-items:center;justify-content:center;width:27px;height:32px;border-radius:7px;background:var(--dark);color:#fff;font-size:15px;font-weight:800}
+#chal .w .wd.t b{background:var(--ok)} #chal .w .wd.q b{background:var(--tile);color:var(--muted)}
+#chal .w .ar{font-size:20px;color:var(--muted);font-weight:800}
+#chal .lb{width:100%;border-top:1px solid var(--line);padding-top:6px}
+#chal .lb .hd,#chal .lb .r{display:grid;grid-template-columns:28px 1fr 64px 56px;align-items:center;gap:6px;padding:7px 6px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+#chal .lb .hd{font-size:10px;letter-spacing:.14em;color:var(--muted);font-weight:800;padding-top:4px}
+#chal .lb .r{border-radius:10px} #chal .lb .r:nth-child(even){background:var(--bg)}
+#chal .lb .r.me{background:#e9fbf0;box-shadow:inset 0 0 0 1px var(--ok)}
+#chal .lb .r .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #chal .lb .r .rk{color:var(--muted);font-weight:800} #chal .lb .r .st{text-align:right} #chal .lb .r .tm{text-align:right;color:var(--muted)}
+#chal .lb .r.me .rk{color:var(--ok)} #chal .lb .r:first-child .rk,#chal .lb .r.top1 .rk{color:var(--ink)}
+#chal .lb .empty{text-align:center;color:var(--muted);font-size:13px;font-weight:600;padding:18px 0 10px}
+#chal .me2{width:100%;margin-top:8px;font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink);text-align:center}
+#chal #chStart{margin-top:16px;width:100%;height:58px;border:0;border-radius:18px;background:var(--ok);color:#fff;font:inherit;font-size:17px;font-weight:800;letter-spacing:.14em;cursor:pointer;box-shadow:0 8px 22px rgba(46,189,107,.35)}
+#chal #chStart:disabled{background:var(--lock);color:var(--muted);box-shadow:none;cursor:default}
+#chal #chStart:active:not(:disabled){transform:scale(.98)}
+#chal .note{margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-align:center;line-height:1.5}
 #homeBtn:active{transform:scale(.98)}
 footer.done #nextBtn.in{transform:translateY(0);opacity:1}
 #nextBtn.slow{transform:translateY(0) scale(.6);transition:transform .7s cubic-bezier(.34,1.4,.64,1),opacity .6s ease}   /* delayed entrance: a slow, soft pop */
@@ -235,6 +276,31 @@ header .level{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #adFake .bar i{display:block;height:100%;width:0;background:var(--ok);transition:width 3s linear}
 #adFake .n{font-size:12px;color:#888}
 /* nickname prompt */
+/* HELP: ask a friend */
+#sosBtn{display:none;border:0;border-radius:999px;background:var(--ok);color:#fff;font:inherit;font-weight:800;font-size:11px;letter-spacing:.14em;padding:7px 12px;cursor:pointer;box-shadow:0 4px 12px rgba(46,189,107,.35);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+body.stuck:not(.done):not(.daily) #sosBtn{display:inline-block}
+#helpDlg{position:fixed;inset:0;z-index:116;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.5);padding:16px}
+#helpDlg.show{display:flex}
+#helpDlg .card{background:#fff;border-radius:22px;padding:16px;width:min(92%,360px);max-height:92vh;overflow:auto;text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#helpDlg .k{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--muted);margin-bottom:10px}
+#helpDlg canvas{display:block;max-width:100%;max-height:60vh;width:auto;height:auto;margin:0 auto;border-radius:14px;box-shadow:0 2px 10px rgba(30,35,60,.15)}
+#helpDlg .acts{display:flex;gap:8px;margin-top:12px}
+#helpDlg .acts button{flex:1;border:0;border-radius:14px;font:inherit;font-weight:800;font-size:13px;letter-spacing:.08em;padding:14px 8px;cursor:pointer}
+#helpDlg #helpCopy{background:var(--ok);color:#fff;flex:2}
+#helpDlg #helpClose{background:transparent;color:var(--muted);flex:0 0 auto;padding:14px 10px}
+#helpDlg .note{font-size:11px;color:var(--muted);margin-top:8px;min-height:14px}
+#helpBanner{display:none;max-width:520px;margin:0 auto 6px;padding:8px 14px;border-radius:12px;background:var(--ok);color:#fff;font-size:12px;font-weight:800;letter-spacing:.12em;text-align:center}
+body.helping #helpBanner{display:block}
+body.helping #nextBtn, body.helping #retryBtn, body.helping #dailyBtn, body.helping #menuBtn{display:none!important}
+#ownBtn{display:none;flex:1;height:60px;border:0;border-radius:16px;background:var(--dark);color:#fff;font:inherit;font-weight:800;font-size:14px;letter-spacing:.1em;cursor:pointer}
+body.helping footer.done #ownBtn{display:block}
+#solvedDlg{position:fixed;inset:0;z-index:117;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.5)}
+#solvedDlg.show{display:flex}
+#solvedDlg .card{background:#fff;border-radius:22px;padding:24px;width:min(88%,340px);text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#solvedDlg .k{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--muted)} #solvedDlg .c{font-size:20px;font-weight:800;color:var(--ink);margin:8px 0 14px}
+#solvedDlg .path{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:14px}
+#solvedDlg .path span{font-weight:800;letter-spacing:.3em;font-size:18px;color:var(--ink)} #solvedDlg .path span.t{color:var(--ok)} #solvedDlg .path i{color:var(--muted);font-style:normal;font-size:12px}
+#solvedDlg button{width:100%;border:0;border-radius:14px;background:var(--ok);color:#fff;font:inherit;font-weight:800;font-size:14px;letter-spacing:.08em;padding:14px;cursor:pointer}
 #nameDlg{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.35)}
 #nameDlg.show{display:flex}
 #nameDlg .card{background:#fff;border-radius:22px;padding:24px;width:min(88%,340px);text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
@@ -369,6 +435,7 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
 </header>
 <div class="modes"><div class="seg"><button id="modeClassic">CLASSIC</button><button id="modeEndless" class="on">ENDLESS</button></div></div>
 <main>
+  <div id="helpBanner"></div>
   <p class="sub" id="subLbl">Change ONE letter at a time to reach the target word.</p>
   <p class="fill" id="fillLbl"></p>
   <div class="board" id="board"><div class="ladder" id="ladder"></div><aside class="best" id="best"></aside></div>
@@ -403,8 +470,23 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
   <button class="danger" id="edWipe" type="button">⟲ RESET PROGRESS</button>
   <p class="hint">Clears coins, Journey position, daily streak and today's daily. Cities and coin settings are kept.</p>
 </div>
+<div id="helpDlg"><div class="card"><div class="k">ASK A FRIEND</div><canvas id="helpCanvas"></canvas><div class="acts"><button id="helpCopy" type="button">COPY LINK</button><button id="helpClose" type="button">✕</button></div><div class="note" id="helpNote"></div></div></div>
+<div id="solvedDlg"><div class="card"><div class="k" id="solvedK">YOUR FRIEND SOLVED IT</div><div class="c" id="solvedC"></div><div class="path" id="solvedPath"></div><button id="solvedOk" type="button">THANKS! +20 🪙</button></div></div>
 <div id="nameDlg"><div class="card"><div class="k">WELCOME</div><div class="c">What should we call you?</div><input id="nameIn" maxlength="14" placeholder="Your name" autocomplete="off"><button id="nameGo" type="button">LET'S PLAY</button></div></div>
 <div id="coinDlg"><div class="card"><div class="k">NOT ENOUGH COINS</div><div class="c" id="cdTitle">Hint costs 25</div><div class="n" id="cdNote"></div><button class="go" id="cdGo">FREE HINT</button><button class="adbtn" id="adBtnDlg" type="button"><span>📺 WATCH AD</span><span class="ar" id="adRew2">+50 🪙</span><span class="al" id="adLeft2">3 LEFT</span></button><button class="no" id="cdNo">Not now</button></div></div>
+<div id="chal" aria-label="Daily challenge">
+  <div class="ctop"><button id="chClose" type="button">🏠 MENU</button><span class="coin"><span class="ci">🪙</span><span id="chCoin">0</span></span></div>
+  <div class="streak" id="chStreak">🔥 DAILY STREAK</div><div class="sbest" id="chBest"></div>
+  <div class="slots" id="chSlots"></div>
+  <div class="card">
+    <div class="k" id="chDate"></div><div class="timer" id="chTimer"></div>
+    <div class="w" id="chWords"></div>
+    <div class="lb" id="chBoard"></div>
+    <div class="me2" id="chMe"></div>
+    <button id="chStart" type="button">▶ START</button>
+    <div class="note" id="chNote">One attempt · no hints · fewest steps wins, fastest time breaks ties</div>
+  </div>
+</div>
 <div id="arriveBg"></div><div id="arrive"><div class="card"><div class="k">WELCOME TO</div><div class="c" id="arrCity">PARIS</div><div class="n" id="arrNote">10 LEVELS AHEAD</div><button id="arrGo" type="button">LET'S GO →</button></div></div>
 <div id="tut" aria-label="Rules">
   <div class="th">RULES</div>
@@ -415,10 +497,10 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
   <button class="gotit" id="gotIt" type="button">GOT IT</button>
 </div>
 <footer id="footer">
-  <div class="tbar" id="tbar"><span class="tl">TARGET</span><span class="tw" id="tbarWord"></span><span class="ts" id="tbarSteps"></span></div>
+  <div class="tbar" id="tbar"><span class="tl">TARGET</span><span class="tw" id="tbarWord"></span><span class="ts" id="tbarSteps"></span><button id="sosBtn" type="button">🆘 HELP</button></div>
   <div class="kb" id="kb"></div>
   <div id="lockbar"><span class="cl">🔒 NEXT PUZZLE IN</span><span class="ct" id="lockTime">01:00:00</span></div>
-  <div class="donebar" id="donebar"><div id="praise"><div class="pt" id="praiseT"></div><div class="ps" id="praiseS"></div></div><button id="retryBtn">↺ RESTART</button><button id="nextBtn" aria-label="Next puzzle">→</button><div id="countdown"><span class="cl">NEXT AT 9 AM · IN</span><span class="ct" id="countTime">00:00:00</span></div><button id="homeBtn" type="button">🏠 MENU</button></div>
+  <div class="donebar" id="donebar"><div id="praise"><div class="pt" id="praiseT"></div><div class="ps" id="praiseS"></div></div><button id="retryBtn">↺ RESTART</button><button id="nextBtn" aria-label="Next puzzle">→</button><div id="countdown"><span class="cl">NEXT CHALLENGE · IN</span><span class="ct" id="countTime">00:00:00</span></div><button id="lbBtn" type="button">🏆 LEADERBOARD</button><button id="homeBtn" type="button">🏠 MENU</button><button id="ownBtn" type="button">PLAY YOUR OWN JOURNEY →</button></div>
 </footer>
 <canvas id="confetti"></canvas>
 
@@ -429,24 +511,39 @@ const PUZZLES = DATA.puzzles;
 const ENDLESS = DATA.endless.concat(DATA.puzzles.map(q=>({s:q.s,t:q.t,par:[...q.s].filter((c,i)=>c!==q.t[i]).length,p:q.p})));
 let MODE = 'endless';
 let DAILY = false;                                   // daily-challenge mode (one fixed 5-letter puzzle per calendar day)
-const DAILY_HOUR = 9;   // a new daily unlocks at 9:00 AM local time
-const dailyDate = (d=new Date())=>{ const x=new Date(d); x.setHours(x.getHours()-DAILY_HOUR); return x; };   // the "daily day" runs 9 AM → 9 AM
+const DAILY_HOUR = 0;   // the streak day is the calendar day (three challenge slots inside it)
+const dailyDate = (d=new Date())=>{ const x=new Date(d); x.setHours(x.getHours()-DAILY_HOUR); return x; };
 const fmtKey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const dayKey = ()=> fmtKey(dailyDate());
 const dayLabel = ()=> dailyDate().toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
-function nextUnlock(){ const n=new Date(), u=new Date(n); u.setHours(DAILY_HOUR,0,0,0); if (u<=n) u.setDate(u.getDate()+1); return u.getTime(); }   // the coming 9 AM
-function dailyPuzzle(){ const pool=ENDLESS.filter(q=>q.s.length===5); let h=0; for(const ch of dayKey()) h=(h*31+ch.charCodeAt(0))>>>0; return pool[h%pool.length]; }
-function dailyLoad(){ try{ return JSON.parse(localStorage.getItem('dailyRec')||'null'); }catch(e){ return null; } }
+/* Three challenges a day. Everyone gets the same 5-letter ladder per slot; one attempt; ranked by steps, then time. */
+const SLOTS = [ {k:'morning', n:'MORNING', from:6, to:12}, {k:'afternoon', n:'AFTERNOON', from:12, to:18}, {k:'evening', n:'EVENING', from:18, to:24} ];
+function slotIdx(d=new Date()){ const h=d.getHours(); return h<6 ? -1 : h<12 ? 0 : h<18 ? 1 : 2; }   // -1: before the morning slot opens
+function slotAt(i, hour, d=new Date()){ const x=new Date(d); x.setHours(hour,0,0,0); return x.getTime(); }
+function slotOpenAt(i, d){ return slotAt(i, SLOTS[i].from, d); }
+function slotCloseAt(i, d){ return slotAt(i, SLOTS[i].to, d); }
+function slotKey(i, dayK=dayKey()){ return dayK+'-'+SLOTS[i].k; }
+function curSlotKey(){ const i=slotIdx(); return i<0 ? null : slotKey(i); }
+function nextSlotOpen(){ const i=slotIdx(); if (i<0) return slotOpenAt(0); if (i<2) return slotOpenAt(i+1); const t=new Date(); t.setDate(t.getDate()+1); return slotOpenAt(0,t); }
+function nextUnlock(){ return nextSlotOpen(); }
+function slotPuzzle(i, dayK=dayKey()){ const deck=DECK5D; const dayN=Math.round(new Date(dayK+'T00:00:00').getTime()/86400000); return deck[(((dayN*3+i)%deck.length)+deck.length)%deck.length]; }
+function dailyPuzzle(){ const k=chalKey||curSlotKey(); const i=k ? SLOTS.findIndex(x=>k.endsWith('-'+x.k)) : 0; return slotPuzzle(Math.max(0,i), k ? k.slice(0,10) : dayKey()); }
+function dailyLoad(){ try{ const d=JSON.parse(localStorage.getItem('dailyRec')||'{}'); return (d && d.slots) ? d : {slots:{}, open:null}; }catch(e){ return {slots:{}, open:null}; } }
 function dailySave(v){ try{ localStorage.setItem('dailyRec', JSON.stringify(v)); }catch(e){} }
 function dailyClear(){ try{ localStorage.removeItem('dailyRec'); }catch(e){} }
-function dailyDone(){ const d=dailyLoad(); return !!(d && d.date === dayKey()); }   // finished within the current 9 AM → 9 AM day
+function slotRec(key){ const d=dailyLoad(); return (key && d.slots[key]) || null; }
+function slotSave(key, rec){ const d=dailyLoad(); d.slots[key]=rec; if (d.open && d.open.key===key) d.open=null; dailySave(d); }
+function dailyDone(){ return !!slotRec(curSlotKey()); }   // the current slot has been played
 function dailyLocked(){ return dailyDone(); }
+let chalKey = null;                                   // slot being played right now (null outside a challenge run)
+function fmtMs(ms){ ms=Math.max(0,ms|0); const m=Math.floor(ms/60000), sec=Math.floor(ms%60000/1000); return m+':'+String(sec).padStart(2,'0'); }
+function fmtHMS(ms){ let s=Math.max(0,Math.ceil(ms/1000)); const h=Math.floor(s/3600), mi=Math.floor(s%3600/60), se=s%60; return (h?h+':':'')+String(mi).padStart(2,'0')+':'+String(se).padStart(2,'0'); }
 let countT=null;
 function startCountdown(){
   clearInterval(countT);
   const tick=()=>{ let s=Math.max(0,Math.ceil((nextUnlock()-Date.now())/1000));
     const h=String(Math.floor(s/3600)).padStart(2,'0'), mi=String(Math.floor(s%3600/60)).padStart(2,'0'), se=String(s%60).padStart(2,'0');
-    $('#countTime').textContent=h+':'+mi+':'+se; if(s===0){ clearInterval(countT); dailyClear(); if(DAILY) E.load(); } };
+    $('#countTime').textContent=h+':'+mi+':'+se; if(s===0){ clearInterval(countT); if(DAILY) openChal(); } };
   tick(); countT=setInterval(tick,1000);
 }
 
@@ -486,10 +583,11 @@ let solved = false;
 let hintsUsed = 0;
 
 const $ = s => document.querySelector(s);
+let lastTouchAt=0;   // shared: a ghost click can land on a DIFFERENT element than the one touched (e.g. the keyboard that replaces the NEXT button)
+document.addEventListener('touchend', ()=>{ lastTouchAt=Date.now(); }, {passive:true, capture:true});
 function onTap(el, fn){ // works in iframes, webviews, iOS, desktop; no double-fire
-  let touchedAt=0;
-  el.addEventListener('touchend', e=>{ touchedAt=Date.now(); e.preventDefault(); fn(); }, {passive:false});
-  el.addEventListener('click', e=>{ if (Date.now()-touchedAt<600) return; /* ghost click after touch */ e.preventDefault(); fn(); });
+  el.addEventListener('touchend', e=>{ lastTouchAt=Date.now(); e.preventDefault(); fn(); }, {passive:false});
+  el.addEventListener('click', e=>{ if (Date.now()-lastTouchAt<600) return; /* ghost click after any touch */ e.preventDefault(); fn(); });
 }
 const ladderEl = $('#ladder'), msgEl = $('#msg'), footer = $('#footer'), nextBtn = $('#nextBtn'), hintBtn = $('#hintBtn');
 
@@ -665,23 +763,35 @@ const E = {
   load(){
     levelAbandonIfOpen();
     if (eIdx >= eOrder.length){ eOrder = shuffle(ENDLESS.map((_,i)=>i)); eIdx = 0; }
-    E.P = DAILY ? dailyPuzzle() : journeyPuzzle(); P = E.P; L = P.s.length; applyTheme();
+    E.P = HELP ? HELP.P : DAILY ? dailyPuzzle() : journeyPuzzle(); P = E.P; L = P.s.length; applyTheme();
     document.body.classList.toggle('daily', DAILY); $('#dailyBtn').classList.toggle('on', DAILY); clearInterval(countT);
     E.words = []; E.revealed = new Set(); E.cur = {pos:null, letter:null, typed:{}}; E.cursor = 0; E.misses = 0; E.badIdx = new Set();
+    if (HELP){ E.words = HELP.w.slice(); E.badIdx = new Set(HELP.b); E.misses = HELP.b.length; }   // the friend's board, as they left it
+    E.lockUntil = performance.now() + 500;   // swallow stray taps/keys that arrive while the new board appears
     levelStart = Date.now(); levelOpen = true;
     solved = false; hintsUsed = 0; earnShow([]);
     footer.classList.remove('done'); document.body.classList.remove('done'); nextBtn.classList.remove('in','slow'); $('#donebar').classList.remove('in'); hintBtn.disabled = false;
     document.documentElement.style.setProperty('--n', L);
     const size = Math.min(64, Math.floor((Math.min(window.innerWidth, 520) - 32 - 2*48 - 12*(L-1)) / L));
     document.documentElement.style.setProperty('--tile-size', size + 'px');
-    $('#levelLbl').textContent = DAILY ? 'DAILY · ' + dayLabel() : journeyLabel();
+    $('#levelLbl').textContent = HELP ? (HELP.c + ' · ' + HELP.l) : DAILY ? 'DAILY · ' + dayLabel() : journeyLabel();
+    document.body.classList.remove('stuck'); stuckAt = Date.now();
     document.body.classList.remove('locked'); clearInterval(lockT);
     if (!DAILY){ const r=regLoad(); if (LOCK_ENABLED && (r.lockUntil||0) > Date.now() && r.cur && ENDLESS[r.cur.idx] && !E.replay){ eOrder[eIdx]=r.cur.idx; E.P=P=ENDLESS[r.cur.idx]; L=P.s.length; E.words=r.cur.words.slice(); E.badIdx=new Set(r.cur.bad||[]); E.misses=(r.cur.bad||[]).length; E.finish(true); return; } }
-    if (DAILY){ const saved = dailyLoad(); if (saved && saved.date === dayKey() && saved.words){ const q=ENDLESS.find(x=>x.s===saved.s && x.t===saved.t); if (q){ E.P=P=q; L=P.s.length; $('#levelLbl').textContent='DAILY · '+dayLabel(); } E.words = saved.words.slice(); E.badIdx = new Set(saved.bad||[]); E.misses = (saved.bad||[]).length; E.finish(true); return; } }
+    if (DAILY){
+      const key = chalKey || curSlotKey(); chalKey = key;
+      const i = key ? SLOTS.findIndex(x=>key.endsWith('-'+x.k)) : -1;
+      $('#levelLbl').textContent = i>=0 ? SLOTS[i].n + ' CHALLENGE · ' + dayLabel() : 'DAILY';
+      const saved = slotRec(key);
+      if (saved && saved.words){ const q=ENDLESS.find(x=>x.s===saved.s && x.t===saved.t); if (q){ E.P=P=q; L=P.s.length; } E.words = saved.words.slice(); E.badIdx = new Set(saved.bad||[]); E.misses = (saved.bad||[]).length; E.finish(true); return; }
+      const d=dailyLoad(); if (!d.open || d.open.key!==key){ d.open={key, startAt:Date.now()}; dailySave(d); }   // the clock starts at START and survives a reload
+      chalStartAt = d.open.startAt; chalTick();
+    }
     $('#subLbl').textContent = 'Change ONE letter at a time to reach the target word.';
-    $('#fillLbl').textContent = 'REACH THE TARGET · NO STEP LIMIT';
+    if (!DAILY) $('#fillLbl').textContent = 'REACH THE TARGET · NO STEP LIMIT';
     setMsg(''); document.querySelector('main').scrollTop=0; E.render();
-    if (!$('#menu').classList.contains('show')) track('level_start', { par:P.par });
+    if (HELP) track('help_start', { par:P.par, extra:{ for:HELP.p, from:HELP.n } });
+    else if (!$('#menu').classList.contains('show')) track('level_start', { par:P.par });
   },
   last(){ for (let i=E.words.length-1;i>=0;i--) if(!E.badIdx.has(i)) return E.words[i]; return P.s; },
   baseFor(i){ for (let k=i-1;k>=0;k--) if(!E.badIdx.has(k)) return E.words[k]; return P.s; },
@@ -752,7 +862,7 @@ const E = {
   },
   finish(quiet){
     solved = true; hintBtn.disabled = true; document.body.classList.add('done');
-    if (DAILY){ if(!quiet){ dailySave({date:dayKey(), next:nextUnlock(), s:P.s, t:P.t, words:E.words, bad:[...E.badIdx]}); streakBump(); } startCountdown(); }
+    if (DAILY){ clearInterval(chalT); if(!quiet){ chalMs = Date.now()-chalStartAt; slotSave(chalKey, {s:P.s, t:P.t, par:P.par, steps:E.words.length, ms:chalMs, words:E.words, bad:[...E.badIdx], at:Date.now()}); streakBump(); $('#fillLbl').textContent='⏱ '+fmtMs(chalMs)+' · '+E.words.length+' STEPS'; setTimeout(()=>{ flush(); }, 50); setTimeout(()=>{ if (DAILY && solved) openChal(chalKey); }, hopEndMs()+3600); } else { const r=slotRec(chalKey); if (r) $('#fillLbl').textContent='⏱ '+fmtMs(r.ms)+' · '+r.steps+' STEPS'; } startCountdown(); }
     else {
       const r=regLoad();
       if (!quiet){ if (!E.replay) r.count=(r.count||0)+1; r.cur={idx:eOrder[eIdx], words:E.words.slice(), bad:[...E.badIdx]}; if (LOCK_ENABLED && r.count>=LOCK_AFTER && !(r.lockUntil>Date.now())){ r.lockUntil=Date.now()+LOCK_MS; r.count=0; } regSave(r); }
@@ -763,13 +873,17 @@ const E = {
     const steps = E.words.length, par = P.par;
     const allRevealed = E.revealed.size>0 && E.words.every((w,i)=>E.revealed.has(i) || w===P.t || E.badIdx.has(i));
     // ---- coins: pay out once per fresh completion; replays only earn a first-time perfect bonus
-    if (!quiet){
+    if (!quiet && HELP){
+      earnShow([[20, 'HELPED ' + HELP.n.toUpperCase()]], hopEndMs() + 1100); coinsAdd(20);
+      levelOpen=false; track('help_solved', { steps:E.words.length, par:P.par, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra:{ for:HELP.p, from:HELP.n, path:E.words.filter((w,i)=>!E.badIdx.has(i)) } });
+      setTimeout(flush, 50);
+    } else if (!quiet){
       const live=E.shortest(P.s), bestN=Math.min((P.p&&P.p.length? P.p.length+1 : Infinity), live?live.length:Infinity), perfect = E.words.length<=bestN, noHint = E.revealed.size===0;
       const key=(DAILY?'D:':'J:')+P.s+'>'+P.t, parts=[]; W.done=W.done||{}; const firstTime=!W.done[key]; W.done[key]=1;   // base pay once per puzzle; perfect bonus once per puzzle
       if (firstTime){ if (DAILY){ parts.push([COINS.daily,'COMPLETED']); if (perfect) parts.push([COINS.dailyPerfect,'BEST ROUTE']); } else { parts.push([COINS.level,'COMPLETED']); if (perfect) parts.push([COINS.perfect,'BEST ROUTE']); } if (noHint && COINS.noHint) parts.push([COINS.noHint,'NO HINTS']); if (perfect) W.perf[key]=1; }
       else if (perfect && !W.perf[key]){ parts.push([DAILY?COINS.dailyPerfect:COINS.perfect,'BEST ROUTE']); W.perf[key]=1; }
       earnShow(parts, hopEndMs() + 1100);   // after the hop and the cheer text
-      levelOpen=false; track(DAILY ? 'daily_complete' : 'level_complete', { steps:E.words.length, par:bestN, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra:{earned:parts.reduce((a,p)=>a+p[0],0), replay:!firstTime} });
+      levelOpen=false; track(DAILY ? 'daily_complete' : 'level_complete', { steps:E.words.length, par:bestN, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra: DAILY ? {earned:parts.reduce((a,p)=>a+p[0],0), slot:chalKey, ms:chalMs} : {earned:parts.reduce((a,p)=>a+p[0],0), replay:!firstTime} });
     } else earnShow([]);
     setMsg('');   // no completion text — the green row, the BEST card and the confetti say it
     E.celebrate = !quiet;
@@ -930,6 +1044,7 @@ onTap(hintBtn, hintPaid);
 const restartLevel = ()=>{ parts=[]; if (DAILY){ dailyClear(); } E.replay=true;   /* same level again: allowed during the cooldown, never counts toward it */ if(MODE==='endless'){ E.load(); } else { loadPuzzle(); } };
 onTap($('#restartBtn'), ()=>{ const p=restartPrice(); if (p>0 && W.coins>=p) coinsAdd(-p, $('#restartBtn')); restartLevel(); });   // header restart costs coins (free if you can't afford it)
 onTap($('#homeBtn'), openMenu);
+onTap($('#lbBtn'), ()=>openChal(chalKey));
 onTap($('#retryBtn'), restartLevel);
 onTap(nextBtn, nextPuzzle);
 function nextPuzzle(){ if(!solved) return; if (!DAILY && lockActive()) return; E.replay=false; parts=[]; const arrived = journeyAdvance(); loadPuzzle(); if (arrived) showArrival(); }
@@ -1007,6 +1122,7 @@ function pickLen(city, lvl){   // word length for this level from the city's % m
 const DECK = {};
 for (const q of ENDLESS){ (DECK[q.s.length] = DECK[q.s.length] || []).push(q); }
 for (const L in DECK) DECK[L].sort((a,b)=>hash32('deck|'+a.s+'>'+a.t) - hash32('deck|'+b.s+'>'+b.t));
+const DECK5D = DECK[5].slice().sort((a,b)=>hash32('daily|'+a.s+'>'+a.t) - hash32('daily|'+b.s+'>'+b.t));
 function journeyPuzzle(){
   jClamp();
   const Lw = pickLen(J.city, J.level), deck = DECK[Lw] || ENDLESS;
@@ -1032,20 +1148,95 @@ function yesterdayKey(){ const d=dailyDate(); d.setDate(d.getDate()-1); return f
 function streakBump(){ const s=stLoad(), today=dayKey(); if (s.last===today) return s; s.cur = (s.last===yesterdayKey()) ? s.cur+1 : 1; s.best=Math.max(s.best,s.cur); s.last=today; stSave(s);
   const ms={3:COINS.streak3,7:COINS.streak7,14:COINS.streak14,30:COINS.streak30}; if (ms[s.cur]) setTimeout(()=>coinsAdd(ms[s.cur]), 1400); return s; }
 
+/* ---------------- Daily challenge screen: 3 slots, shared ladder, top-10 board ---------------- */
+let chalStartAt = 0, chalMs = 0, chalT = null, chView = 0, chTimerT = null, chBoardT = null;
+function chalTick(){ clearInterval(chalT); const f=()=>{ if (!DAILY || solved) return; $('#fillLbl').textContent = '⏱ ' + fmtMs(Date.now()-chalStartAt) + ' · ' + E.words.length + ' STEPS'; }; f(); chalT=setInterval(f, 250); }
+function slotState(i){ const key=slotKey(i), rec=slotRec(key), now=Date.now(); if (rec) return 'played'; if (now < slotOpenAt(i)) return 'locked'; if (now >= slotCloseAt(i)) return 'missed'; return 'live'; }
+function hour12(h){ return (h%12===0?12:h%12) + (h<12||h===24 ? ' AM' : ' PM'); }
+function openChal(key){
+  clearInterval(countT);
+  document.body.dataset.theme=''; document.body.classList.remove('daily');
+  const cur = slotIdx();
+  if (key){ const i=SLOTS.findIndex(x=>key.endsWith('-'+x.k)); chView = i<0 ? Math.max(0,cur) : i; } else chView = Math.max(0, cur);
+  $('#chCoin').textContent = W.coins;
+  const s=stLoad(); $('#chStreak').textContent = '🔥 DAILY STREAK · ' + (s.cur ? s.cur + (s.cur===1?' DAY':' DAYS') : 'START TODAY'); $('#chBest').textContent = s.best>1 ? 'BEST ' + s.best + ' DAYS' : '';
+  $('#chal').classList.add('show');
+  chRender(); clearInterval(chTimerT); chTimerT=setInterval(chTimerTick, 1000); clearInterval(chBoardT); chBoardT=setInterval(()=>{ if (slotState(chView)!=='locked') chLoadBoard(slotKey(chView), true); }, 20000);
+}
+function closeChal(){ $('#chal').classList.remove('show'); clearInterval(chTimerT); clearInterval(chBoardT); }
+function chTimerTick(){
+  const i=chView, st=slotState(i), el=$('#chTimer'); el.classList.toggle('closed', st==='missed' || (st==='played' && Date.now()>=slotCloseAt(i)));
+  if (st==='locked') el.textContent = 'OPENS AT ' + hour12(SLOTS[i].from) + ' · IN ' + fmtHMS(slotOpenAt(i)-Date.now());
+  else if (Date.now() < slotCloseAt(i)) el.textContent = 'CLOSES IN ' + fmtHMS(slotCloseAt(i)-Date.now());
+  else el.textContent = 'CLOSED · NEXT CHALLENGE IN ' + fmtHMS(nextSlotOpen()-Date.now());
+  if (st==='locked' && Date.now()>=slotOpenAt(i)) chRender();
+}
+function wordTiles(w, cls){ return '<span class="wd '+cls+'">' + [...w].map(c=>'<b>'+c+'</b>').join('') + '</span>'; }
+function chRender(){
+  const i=chView, st=slotState(i), key=slotKey(i), rec=slotRec(key), q=slotPuzzle(i);
+  $('#chSlots').innerHTML = SLOTS.map((sl,j)=>{ const s=slotState(j), r=slotRec(slotKey(j));
+    const sub = s==='played' ? r.steps+' STEPS · '+fmtMs(r.ms) : s==='live' ? '● LIVE' : s==='locked' ? '🔒 '+hour12(sl.from) : 'MISSED';
+    return '<button type="button" data-i="'+j+'" class="'+(j===i?'on ':'')+s+'"><span class="sn">'+sl.n+'</span><span class="ss">'+sub+'</span></button>'; }).join('');
+  $('#chSlots').querySelectorAll('button').forEach(b=>onTap(b, ()=>{ chView=+b.dataset.i; chRender(); chTimerTick(); }));
+  $('#chDate').textContent = dailyDate().toLocaleDateString(undefined,{day:'2-digit',month:'short'}).toUpperCase() + ' · ' + SLOTS[i].n;
+  chTimerTick();
+  const reveal = st==='played' || st==='missed';
+  $('#chWords').innerHTML = reveal ? wordTiles(q.s,'') + '<span class="ar">→</span>' + wordTiles(q.t,'t') : wordTiles('?????','q') + '<span class="ar">→</span>' + wordTiles('?????','q');
+  const btn=$('#chStart');
+  if (st==='live'){ btn.disabled=false; btn.textContent='▶ START'; }
+  else if (st==='played'){ btn.disabled=true; btn.textContent='✓ DONE · '+rec.steps+' STEPS · '+fmtMs(rec.ms); }
+  else if (st==='locked'){ btn.disabled=true; btn.textContent='🔒 OPENS AT '+hour12(SLOTS[i].from); }
+  else { btn.disabled=true; btn.textContent='MISSED THIS ONE'; }
+  $('#chNote').textContent = st==='live' ? 'One attempt · no hints · the clock starts when you press START' : 'Fewest steps wins · fastest time breaks ties · top 10 shown';
+  $('#chMe').textContent='';
+  if (st==='locked'){ $('#chBoard').innerHTML='<div class="empty">The ladder is revealed at '+hour12(SLOTS[i].from)+'.</div>'; return; }
+  chLoadBoard(key);
+}
+const boardCache = {};
+async function chLoadBoard(key, silent){
+  const box=$('#chBoard'); if (!silent && !boardCache[key]) box.innerHTML='<div class="empty">Loading leaderboard…</div>';
+  let rows = null;
+  try{ const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&board='+encodeURIComponent(key)); const j = await r.json(); if (j.ok) rows = j.rows; }catch(e){}
+  if (!rows){ rows = boardCache[key] || []; if (!boardCache[key]) { chRenderBoard(key, rows, true); return; } }
+  boardCache[key] = rows; chRenderBoard(key, rows, false);
+}
+function chRenderBoard(key, rows, offline){
+  if (slotKey(chView)!==key) return;
+  rows = rows.slice();
+  const mine = slotRec(key);
+  if (mine && !rows.some(r=>r.pid===W.pid)) rows.push({ pid:W.pid, name:W.name||'YOU', steps:mine.steps, ms:mine.ms });   // my run, before the sheet has it
+  rows.sort((a,b)=> a.steps-b.steps || a.ms-b.ms);
+  const box=$('#chBoard'), me=$('#chMe');
+  if (!rows.length){ box.innerHTML = '<div class="empty">' + (offline ? 'Leaderboard needs a connection.' : 'Nobody has finished yet — be the first on the board!') + '</div>'; me.textContent=''; return; }
+  const medal = ['🥇','🥈','🥉'];
+  box.innerHTML = '<div class="hd"><span>#</span><span>PLAYER</span><span style="text-align:right">STEPS</span><span style="text-align:right">TIME</span></div>' +
+    rows.slice(0,10).map((r,i)=>'<div class="r'+(r.pid===W.pid?' me':'')+'"><span class="rk">'+(i<3?medal[i]:i+1)+'</span><span class="n">'+esc(r.name||('PLAYER-'+String(r.pid).slice(0,4)))+'</span><span class="st">'+r.steps+'</span><span class="tm">'+fmtMs(r.ms)+'</span></div>').join('');
+  const my = rows.findIndex(r=>r.pid===W.pid);
+  me.textContent = my<0 ? (slotState(chView)==='live' ? rows.length + (rows.length===1?' PLAYER HAS':' PLAYERS HAVE') + ' FINISHED' : '') : my>=10 ? 'YOU · ' + (my+1) + ordinal(my+1) + ' OF ' + rows.length : (rows.length>1 ? 'YOU ARE ' + (my+1) + ordinal(my+1) + ' OF ' + rows.length : 'YOU ARE FIRST ON THE BOARD');
+  // podium bonus once a slot has closed
+  if (mine && my>=0 && my<3 && Date.now()>=slotCloseAt(chView) && !mine.bonus){ const b=[COINS.podium1,COINS.podium2,COINS.podium3][my]; mine.bonus=b; slotSave(key, mine); if (b) setTimeout(()=>coinsAdd(b, $('#chCoin')), 600); me.textContent = medal[my] + ' PODIUM BONUS +' + b + ' 🪙 · ' + me.textContent; }
+}
+function ordinal(n){ const v=n%100; return (v>=11&&v<=13) ? 'TH' : ['TH','ST','ND','RD','TH','TH','TH','TH','TH','TH'][n%10]; }
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function chStartRun(){ const i=chView; if (slotState(i)!=='live') return; chalKey = slotKey(i); closeChal(); DAILY=true; parts=[]; E.replay=false; E.load(); }
+onTap($('#chStart'), chStartRun);
+onTap($('#chClose'), ()=>{ closeChal(); openMenu(); });
+
 /* ---------------- Main menu ---------------- */
 function openMenu(){
   jClamp(); coinsRender(); adRender();
   if (W.loginDay!==dayKey()){ W.loginDay=dayKey(); wSave(); setTimeout(()=>coinsAdd(COINS.login, $('#menuCoin')), 500); }   // daily login bonus
   const s=stLoad(); const dailyDone_ = dailyDone();
   $('#journeySub').textContent = (J.done ? CITIES[J.city].name+' · LEVEL '+(J.level+1)+'/'+CITIES[J.city].levels : 'START YOUR TRIP · '+CITIES[0].name);
-  $('#dailySub').textContent = (s.cur ? '🔥 '+s.cur+' DAY STREAK' : "TODAY'S 5-LETTER PUZZLE") + (dailyDone_ ? ' · DONE ✓' : '');
+  const si=slotIdx(); $('#dailySub').textContent = (s.cur ? '🔥 '+s.cur+' DAY STREAK' : '3 CHALLENGES A DAY') + (si<0 ? ' · OPENS 6 AM' : dailyDone_ ? ' · '+SLOTS[si].n+' DONE ✓' : ' · '+SLOTS[si].n+' LIVE');
   $('#playDaily').classList.toggle('done', dailyDone_);
   document.body.dataset.theme=''; document.body.classList.remove('daily');
   $('#menu').classList.add('show'); clearInterval(countT);
 }
 function closeMenu(){ $('#menu').classList.remove('show'); document.body.focus(); }
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible' && $('#chal').classList.contains('show')) chRender(); });
 onTap($('#playJourney'), ()=>{ DAILY=false; parts=[]; closeMenu(); const fresh = !J.done && J.level===0; E.load(); if (fresh) showArrival(); });
-onTap($('#playDaily'),   ()=>{ DAILY=true;  parts=[]; closeMenu(); E.load(); });
+onTap($('#playDaily'),   ()=>{ closeMenu(); openChal(); });
 onTap($('#menuBtn'), openMenu);
 onTap($('#menuHelp'), ()=>{ closeMenu(); openTut(); });
 
@@ -1080,7 +1271,7 @@ onTap($('#edWipe'), ()=>{   // two taps: arm, then confirm within 3 s
   const b=$('#edWipe');
   if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent='TAP AGAIN TO CONFIRM'; clearTimeout(wipeArm); wipeArm=setTimeout(()=>{ b.classList.remove('arm'); b.textContent='⟲ RESET PROGRESS'; }, 3000); return; }
   clearTimeout(wipeArm);
-  try{ ['wallet','journey','streak','dailyRec','reg'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  try{ ['wallet','journey','streak','dailyRec','reg','boardCache'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
   W=wLoad(); J=jLoad(); DAILY=false; E.replay=false; coinsRender();
   flush(); W.pid=newPid(); W.name=''; wSave();   // new player identity after a reset
   b.classList.remove('arm'); b.textContent='✓ RESET DONE'; setTimeout(()=>{ b.textContent='⟲ RESET PROGRESS'; }, 1500);
@@ -1097,8 +1288,8 @@ onTap($('#edSave'), ()=>{
 
 /* ---------------- Coins: config (editable), wallet, animations ---------------- */
 const COINS_DEFAULT = { start:100, level:10, perfect:10, noHint:5, daily:30, dailyPerfect:20, cityArrive:50, login:10,
-                        streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, adsPerDay:3, adCooldownMin:10 };
-const COIN_LABELS = { start:'START BALANCE', level:'LEVEL DONE', perfect:'PERFECT BONUS', noHint:'NO-HINT BONUS', daily:'DAILY DONE', dailyPerfect:'DAILY PERFECT', cityArrive:'NEW CITY', login:'DAILY LOGIN',
+                        streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, adsPerDay:3, adCooldownMin:10, podium1:30, podium2:20, podium3:10 };
+const COIN_LABELS = { start:'START BALANCE', level:'LEVEL DONE', perfect:'PERFECT BONUS', noHint:'NO-HINT BONUS', daily:'CHALLENGE DONE', dailyPerfect:'CHALLENGE PERFECT', podium1:'🥇 PODIUM', podium2:'🥈 PODIUM', podium3:'🥉 PODIUM', cityArrive:'NEW CITY', login:'DAILY LOGIN',
                       streak3:'STREAK 3', streak7:'STREAK 7', streak14:'STREAK 14', streak30:'STREAK 30', hint:'HINT COST', hint2:'2ND HINT COST', restart:'RESTART COST', freeHintsPerDay:'FREE HINTS / DAY', hintCooldownMin:'FREE HINT WAIT (MIN)', adReward:'AD REWARD', adsPerDay:'ADS / DAY', adCooldownMin:'AD WAIT (MIN)' };
 function coinsCfgLoad(){ try{ const c=JSON.parse(localStorage.getItem('coinsCfg')||'null'); if (c) return {...COINS_DEFAULT, ...c}; }catch(e){} return {...COINS_DEFAULT}; }
 let COINS = coinsCfgLoad();
@@ -1220,6 +1411,93 @@ async function loadStats(){
 }
 onTap($('#statsLoad'), loadStats);
 
+/* ---------------- HELP: share the stuck level with a friend ---------------- */
+let HELP = null, stuckAt = Date.now();
+(function parseHelp(){
+  const m = location.search.match(/[?&]help=([^&]+)/); if (!m) return;
+  try{
+    const h = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
+    if (!h.s || !h.t || h.s.length!==h.t.length) return;
+    const q = ENDLESS.find(x=>x.s===h.s && x.t===h.t);
+    HELP = { P: q || { s:h.s, t:h.t, par:(h.par||[...h.s].filter((c,i)=>c!==h.t[i]).length), p:[] }, w:(h.w||[]).filter(x=>typeof x==='string' && x.length===h.s.length), b:(h.b||[]).filter(i=>Number.isInteger(i)), n:String(h.n||'A FRIEND').slice(0,14), p:String(h.p||''), c:String(h.c||''), l:String(h.l||'') };
+    HELP.b = HELP.b.filter(i=>i<HELP.w.length);
+  }catch(e){ HELP=null; }
+})();
+function stuckTick(){ if (solved || DAILY || HELP || !levelOpen) return; if (E.misses>=2 || Date.now()-stuckAt>45000) document.body.classList.add('stuck'); }
+setInterval(stuckTick, 1000);
+function helpLink(){
+  const h = { s:P.s, t:P.t, par:P.par, w:E.words.slice(), b:[...E.badIdx], n:W.name||'A FRIEND', p:W.pid, c:(CITIES[J.city]||{}).name||'', l:(J.level+1)+'/'+((CITIES[J.city]||{}).levels||'') };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(h)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return location.origin + location.pathname + '?help=' + b64;
+}
+function drawHelpCard(){   // the live board as a picture: header, start word, rows so far, caption, target, HELP button
+  const cv = $('#helpCanvas'), S = 2, Wd = 360, tile = 68, gap = 12, n = L;
+  const rowsN = E.words.length + 1;
+  const Ht = 64 + tile + 26 + rowsN*(tile+12) + 12 + 100 + tile + 36 + 76 + 28;
+  cv.width = Wd*S; cv.height = Ht*S; const c = cv.getContext('2d'); c.scale(S,S);
+  const g = c.createLinearGradient(0,0,0,Ht); g.addColorStop(0,'#eef3fb'); g.addColorStop(1,'#f7f7fb'); c.fillStyle=g; c.fillRect(0,0,Wd,Ht);
+  const font = (w,sz)=>c.font = w+' '+sz+'px -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
+  const spaced=(txt,x,y,sp)=>{ for (const ch of txt){ c.fillText(ch,x,y); x+=c.measureText(ch).width+sp; } };
+  c.fillStyle='#1f2333'; font(800,15); c.textAlign='left'; c.textBaseline='alphabetic'; spaced('WORD LADDER',16,28,2.2);
+  font(800,10); c.fillStyle='#7a8090'; spaced(((CITIES[J.city]||{}).name||'')+' · '+(J.level+1)+'/'+((CITIES[J.city]||{}).levels||''),16,46,1.4);
+  const roundRect=(x,y,w,h,r)=>{ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
+  const tiles=(word, y, style)=>{ const tw=n*tile+(n-1)*gap, x0=(Wd-tw)/2; for (let i=0;i<n;i++){ const x=x0+i*(tile+gap); const st = typeof style==='function'? style(i) : style;
+      c.save(); if (st==='dark'||st==='grey'||st==='hit'){ c.shadowColor='rgba(30,35,60,.25)'; c.shadowBlur=10; c.shadowOffsetY=4; }
+      roundRect(x,y,tile,tile,14);
+      c.fillStyle = st==='dark'?'#2b2f3d': st==='grey'?'#595e6b': st==='hit'?'#2ebd6b': st==='bad'?'#fff3f3': '#fff'; c.fill(); c.restore();
+      if (st==='empty'||st==='cursor'||st==='bad'||st==='ok'||st==='changed'){ c.lineWidth=2; c.strokeStyle = st==='cursor'?'#9fb0ff': st==='bad'?'#e5484d': st==='changed'?'#4f6bff': st==='ok'?'#d9dde8':'#e9d8a8'; roundRect(x+1,y+1,tile-2,tile-2,13); c.stroke(); }
+      if (st==='cursor'){ c.fillStyle='#4f6bff'; c.fillRect(x+tile/2-1, y+18, 2, tile-36); }
+      if (word && word[i] && st!=='empty' && st!=='cursor'){ c.fillStyle = (st==='dark'||st==='grey'||st==='hit')?'#fff': st==='bad'?'#e5484d': st==='changed'?'#4f6bff':'#1f2333'; font(800,34); c.textAlign='center'; c.textBaseline='middle'; c.fillText(word[i], x+tile/2, y+tile/2+2); }
+    } return y+tile; };
+  let y=64; y=tiles(P.s, y, 'dark');
+  c.fillStyle='#b9bec9'; font(700,16); c.textAlign='center'; c.textBaseline='middle'; c.fillText('↓', Wd/2, y+14); y+=26;
+  E.words.forEach((w,i)=>{ const bad=E.badIdx.has(i), prev=E.baseFor(i); y=tiles(w, y, k=> bad?'bad': (w[k]!==prev[k]?'changed':'ok')); y+=12; });
+  y=tiles(null, y, k=>k===0?'cursor':'empty'); y+=12;
+  c.fillStyle='#8a8f9c'; font(800,38); c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText('CHANGE 1 LETTER', Wd/2, y+48);
+  c.fillStyle='#9a9fac'; font(800,30); c.fillText('REACH THE TARGET', Wd/2, y+86); y+=100;
+  y=tiles(P.t, y, 'grey'); y+=36;
+  c.save(); c.shadowColor='rgba(46,189,107,.35)'; c.shadowBlur=14; c.shadowOffsetY=6; roundRect(Wd/2-100, y, 200, 76, 22); c.fillStyle='#17cf3a'; c.fill(); c.restore();
+  c.fillStyle='#fff'; font(800,36); c.textAlign='center'; c.textBaseline='middle'; c.fillText('HELP', Wd/2, y+40);
+}
+function helpCardFile(){   // synchronous: toDataURL (not toBlob) so the share sheet can open inside the same tap
+  drawHelpCard();
+  try{ const du=$('#helpCanvas').toDataURL('image/png'); const bin=atob(du.split(',')[1]); const u8=new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); return new File([u8], 'word-ladder-help.png', {type:'image/png'}); }catch(e){ return null; }
+}
+function openHelp(){   // tap HELP → the device share sheet, with the level picture + link
+  if (solved || DAILY || HELP) return;
+  track('help_open', { steps:E.words.length, wrong:E.misses, seconds:levelSecs() });
+  const file = helpCardFile();
+  const url = helpLink(), who = W.name||'Your friend', text = who + ' is stuck on Word Ladder — can you finish this ladder? ' + url;
+  const done=(how)=>track('help_sent',{extra:{how}});
+  const showCard=(msg)=>{ $('#helpNote').textContent=msg||''; $('#helpDlg').classList.add('show'); };   // fallback: preview + copy link (desktop / no share sheet)
+  if (!navigator.share){ showCard('Sharing is not available in this browser — copy the link instead.'); return; }
+  let p;
+  if (file && navigator.canShare && navigator.canShare({files:[file]})) p = navigator.share({ files:[file], text, url }).then(()=>done('image')).catch(e=>{ if (e && e.name==='AbortError') throw e; return navigator.share({ text, url }).then(()=>done('link')); });
+  else p = navigator.share({ text, url }).then(()=>done('link'));
+  p.catch(e=>{ if (e && e.name==='AbortError') return; showCard('Could not open sharing — copy the link instead.'); });
+}
+function closeHelp(){ $('#helpDlg').classList.remove('show'); document.body.focus(); }
+async function copyHelp(){ const url=helpLink(); try{ await navigator.clipboard.writeText(url); }catch(e){ const i=document.createElement('input'); i.value=url; document.body.appendChild(i); i.select(); document.execCommand('copy'); i.remove(); } $('#helpNote').textContent='Link copied!'; track('help_sent',{extra:{how:'copy'}}); }
+onTap($('#sosBtn'), openHelp); onTap($('#helpCopy'), copyHelp); onTap($('#helpClose'), closeHelp);
+onTap($('#ownBtn'), ()=>{ flush(); location.href = location.origin + location.pathname; });
+/* the asker: show solutions friends sent back (once each) */
+async function checkHelped(){
+  if (HELP || !W.pid || !TRACK.url) return;
+  try{
+    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&helped='+encodeURIComponent(W.pid)); const j = await r.json();
+    if (!j.ok || !j.rows || !j.rows.length) return;
+    W.helpSeen = W.helpSeen || {};
+    const fresh = j.rows.filter(x=>!W.helpSeen[x.id]); if (!fresh.length) return;
+    const x = fresh[0]; W.helpSeen[x.id]=1; wSave();
+    $('#solvedK').textContent = String(x.by||'A FRIEND').toUpperCase() + ' SOLVED YOUR PUZZLE';
+    $('#solvedC').textContent = x.s + ' → ' + x.t + ' · ' + x.steps + ' STEPS';
+    const path=$('#solvedPath'); path.innerHTML=''; const words=[x.s].concat(x.path||[]);
+    words.forEach((w,i)=>{ if (i){ const a=document.createElement('i'); a.textContent='↓'; path.appendChild(a); } const sp=document.createElement('span'); sp.textContent=w; if (w===x.t) sp.classList.add('t'); path.appendChild(sp); });
+    $('#solvedDlg').classList.add('show');
+  }catch(e){}
+}
+onTap($('#solvedOk'), ()=>{ $('#solvedDlg').classList.remove('show'); coinsAdd(20, $('#coinPill')); track('help_thanks'); });
+
 /* ---------------- Tutorial: a scripted ghost player types CAT → BAT → BAD → BED ---------------- */
 const UPWARD = false;   // ladder builds top-down (set true to test the bottom-up variant)
 document.body.classList.toggle('up', UPWARD);
@@ -1308,7 +1586,8 @@ onTap($('#helpBtn'), openTut);
 
 TRACK.on=false; loadPuzzle(); TRACK.on=true;   // the board preloaded behind the menu is not a level start
 let tutSeen=false; try{ tutSeen=localStorage.getItem('tutSeen')==='1'; }catch(e){}
-if (tutSeen){ openMenu(); askName(); } else { openTut(); openMenu(); }   // rules only on the very first launch (GOT IT remembers); later via ❔ in the menu
+if (HELP){ DAILY=false; closeMenu(); E.load(); $('#helpBanner').textContent = HELP.n.toUpperCase() + ' NEEDS YOUR HELP' + (HELP.c ? ' · ' + HELP.c + ' ' + HELP.l : ''); document.body.classList.add('helping'); askName(); }
+else if (tutSeen){ openMenu(); askName(); checkHelped(); } else { openTut(); openMenu(); }   // rules only on the very first launch (GOT IT remembers); later via ❔ in the menu
 if (W.name) track('session_start', { extra:{ua:navigator.userAgent.slice(0,60), w:innerWidth, h:innerHeight} });
 (function fitFooter(){ const m=document.querySelector('main'); const f=$('#footer');
   const apply=()=>{ m.style.paddingBottom=(f.offsetHeight+16)+'px'; };
