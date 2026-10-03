@@ -278,7 +278,7 @@ header .level{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* nickname prompt */
 /* HELP: ask a friend */
 #sosBtn{display:none;border:0;border-radius:999px;background:var(--ok);color:#fff;font:inherit;font-weight:800;font-size:11px;letter-spacing:.14em;padding:7px 12px;cursor:pointer;box-shadow:0 4px 12px rgba(46,189,107,.35);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
-body.stuck:not(.done):not(.daily) #sosBtn{display:inline-block}
+body:not(.done) #sosBtn{display:inline-block}   /* always available while a level is open */
 #helpDlg{position:fixed;inset:0;z-index:116;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.5);padding:16px}
 #helpDlg.show{display:flex}
 #helpDlg .card{background:#fff;border-radius:22px;padding:16px;width:min(92%,360px);max-height:92vh;overflow:auto;text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
@@ -1423,10 +1423,10 @@ let HELP = null, stuckAt = Date.now();
     HELP.b = HELP.b.filter(i=>i<HELP.w.length);
   }catch(e){ HELP=null; }
 })();
-function stuckTick(){ if (solved || DAILY || HELP || !levelOpen) return; if (E.misses>=2 || Date.now()-stuckAt>45000) document.body.classList.add('stuck'); }
+function stuckTick(){ if (solved || DAILY || HELP || !levelOpen) return; if (E.misses>=2 || Date.now()-stuckAt>30000 || (hintPrice()>0 && W.coins<hintPrice())) document.body.classList.add('stuck'); }   // stuck = 2 wrong words, 30 s on the level, or a hint you can't afford   // 'stuck' is kept for analytics/styling; the button itself is always shown in Journey
 setInterval(stuckTick, 1000);
 function helpLink(){
-  const h = { s:P.s, t:P.t, par:P.par, w:[], b:[], n:W.name||'A FRIEND', p:W.pid, c:(CITIES[J.city]||{}).name||'', l:(J.level+1)+'/'+((CITIES[J.city]||{}).levels||'') };
+  const h = { s:P.s, t:P.t, par:P.par, w:[], b:[], n:W.name||'A FRIEND', p:W.pid, c:HELP?HELP.c:DAILY?'DAILY':((CITIES[J.city]||{}).name||''), l:HELP?HELP.l:DAILY?'':(J.level+1)+'/'+((CITIES[J.city]||{}).levels||'') };
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(h)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   return location.origin + location.pathname + '?help=' + b64;
 }
@@ -1438,7 +1438,7 @@ function drawHelpCard(){   // the live board as a picture: header, start word, r
   const font = (w,sz)=>c.font = w+' '+sz+'px -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
   const spaced=(txt,x,y,sp)=>{ for (const ch of txt){ c.fillText(ch,x,y); x+=c.measureText(ch).width+sp; } };
   c.fillStyle='#1f2333'; font(800,15); c.textAlign='left'; c.textBaseline='alphabetic'; spaced('WORD LADDER',16,28,2.2);
-  font(800,10); c.fillStyle='#7a8090'; spaced(((CITIES[J.city]||{}).name||'')+' · '+(J.level+1)+'/'+((CITIES[J.city]||{}).levels||''),16,46,1.4);
+  font(800,10); c.fillStyle='#7a8090'; spaced($('#levelLbl').textContent,16,46,1.4);
   const roundRect=(x,y,w,h,r)=>{ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
   const tiles=(word, y, style)=>{ const tw=n*tile+(n-1)*gap, x0=(Wd-tw)/2; for (let i=0;i<n;i++){ const x=x0+i*(tile+gap); const st = typeof style==='function'? style(i) : style;
       c.save(); if (st==='dark'||st==='grey'||st==='hit'){ c.shadowColor='rgba(30,35,60,.25)'; c.shadowBlur=10; c.shadowOffsetY=4; }
@@ -1461,7 +1461,7 @@ function helpCardFile(){   // synchronous: toDataURL (not toBlob) so the share s
   try{ const du=$('#helpCanvas').toDataURL('image/png'); const bin=atob(du.split(',')[1]); const u8=new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); return new File([u8], 'word-ladder-help.png', {type:'image/png'}); }catch(e){ return null; }
 }
 function openHelp(){   // tap HELP → the device share sheet, with the level picture + link
-  if (solved || DAILY || HELP) return;
+  if (solved) return;
   track('help_open', { steps:E.words.length, wrong:E.misses, seconds:levelSecs() });
   const file = helpCardFile();
   const url = helpLink(), who = W.name||'Your friend', text = who + ' is stuck on Word Ladder — can you finish this ladder? ' + url;
