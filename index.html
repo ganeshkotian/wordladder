@@ -1426,14 +1426,13 @@ let HELP = null, stuckAt = Date.now();
 function stuckTick(){ if (solved || DAILY || HELP || !levelOpen) return; if (E.misses>=2 || Date.now()-stuckAt>45000) document.body.classList.add('stuck'); }
 setInterval(stuckTick, 1000);
 function helpLink(){
-  const h = { s:P.s, t:P.t, par:P.par, w:E.words.slice(), b:[...E.badIdx], n:W.name||'A FRIEND', p:W.pid, c:(CITIES[J.city]||{}).name||'', l:(J.level+1)+'/'+((CITIES[J.city]||{}).levels||'') };
+  const h = { s:P.s, t:P.t, par:P.par, w:[], b:[], n:W.name||'A FRIEND', p:W.pid, c:(CITIES[J.city]||{}).name||'', l:(J.level+1)+'/'+((CITIES[J.city]||{}).levels||'') };
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(h)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   return location.origin + location.pathname + '?help=' + b64;
 }
 function drawHelpCard(){   // the live board as a picture: header, start word, rows so far, caption, target, HELP button
   const cv = $('#helpCanvas'), S = 2, Wd = 360, tile = 68, gap = 12, n = L;
-  const rowsN = E.words.length + 1;
-  const Ht = 64 + tile + 26 + rowsN*(tile+12) + 12 + 100 + tile + 36 + 76 + 28;
+  const Ht = 64 + tile + 26 + (tile+12) + 12 + 100 + tile + 30 + 30;
   cv.width = Wd*S; cv.height = Ht*S; const c = cv.getContext('2d'); c.scale(S,S);
   const g = c.createLinearGradient(0,0,0,Ht); g.addColorStop(0,'#eef3fb'); g.addColorStop(1,'#f7f7fb'); c.fillStyle=g; c.fillRect(0,0,Wd,Ht);
   const font = (w,sz)=>c.font = w+' '+sz+'px -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
@@ -1451,13 +1450,11 @@ function drawHelpCard(){   // the live board as a picture: header, start word, r
     } return y+tile; };
   let y=64; y=tiles(P.s, y, 'dark');
   c.fillStyle='#b9bec9'; font(700,16); c.textAlign='center'; c.textBaseline='middle'; c.fillText('↓', Wd/2, y+14); y+=26;
-  E.words.forEach((w,i)=>{ const bad=E.badIdx.has(i), prev=E.baseFor(i); y=tiles(w, y, k=> bad?'bad': (w[k]!==prev[k]?'changed':'ok')); y+=12; });
   y=tiles(null, y, k=>k===0?'cursor':'empty'); y+=12;
-  c.fillStyle='#8a8f9c'; font(800,38); c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText('CHANGE 1 LETTER', Wd/2, y+48);
-  c.fillStyle='#9a9fac'; font(800,30); c.fillText('REACH THE TARGET', Wd/2, y+86); y+=100;
-  y=tiles(P.t, y, 'grey'); y+=36;
-  c.save(); c.shadowColor='rgba(46,189,107,.35)'; c.shadowBlur=14; c.shadowOffsetY=6; roundRect(Wd/2-100, y, 200, 76, 22); c.fillStyle='#17cf3a'; c.fill(); c.restore();
-  c.fillStyle='#fff'; font(800,36); c.textAlign='center'; c.textBaseline='middle'; c.fillText('HELP', Wd/2, y+40);
+  c.fillStyle='#8a8f9c'; font(800,33); c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText('CHANGE 1 LETTER', Wd/2, y+48);
+  c.fillStyle='#9a9fac'; font(800,27); c.fillText('REACH THE TARGET', Wd/2, y+86); y+=100;
+  y=tiles(P.t, y, 'grey'); y+=30;
+  c.fillStyle='#7a8090'; font(800,11); c.textAlign='center'; c.textBaseline='middle'; { const t=(W.name||'A FRIEND').toUpperCase()+' NEEDS HELP · TAP THE LINK', sp=1.6; let w=0; for (const ch of t) w+=c.measureText(ch).width+sp; c.textAlign='left'; spaced(t,(Wd-w)/2,y+10,sp); }
 }
 function helpCardFile(){   // synchronous: toDataURL (not toBlob) so the share sheet can open inside the same tap
   drawHelpCard();
