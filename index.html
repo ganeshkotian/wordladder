@@ -874,8 +874,10 @@ const E = {
     const allRevealed = E.revealed.size>0 && E.words.every((w,i)=>E.revealed.has(i) || w===P.t || E.badIdx.has(i));
     // ---- coins: pay out once per fresh completion; replays only earn a first-time perfect bonus
     if (!quiet && HELP){
-      earnShow([[20, 'HELPED ' + HELP.n.toUpperCase()]], hopEndMs() + 1100); coinsAdd(20);
-      levelOpen=false; track('help_solved', { steps:E.words.length, par:P.par, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra:{ for:HELP.p, from:HELP.n, path:E.words.filter((w,i)=>!E.badIdx.has(i)) } });
+      const hid = newPid()+newPid(); W.helpPaid = W.helpPaid||{}; W.helpPaid[hid]=1; wSave();   // paid here; the asker-side claim skips this id
+      earnShow([[COINS.helpReward, 'HELPED ' + HELP.n.toUpperCase()]], hopEndMs() + 1100);
+      setTimeout(()=>notice('THANK YOU', 'You received '+COINS.helpReward+' coins for helping '+HELP.n, 'NICE!'), hopEndMs() + 1100 + 1900);
+      levelOpen=false; track('help_solved', { steps:E.words.length, par:P.par, hints:E.revealed.size, wrong:E.misses, seconds:levelSecs(), extra:{ for:HELP.p, from:HELP.n, hid, path:E.words.filter((w,i)=>!E.badIdx.has(i)) } });
       setTimeout(flush, 50);
     } else if (!quiet){
       const live=E.shortest(P.s), bestN=Math.min((P.p&&P.p.length? P.p.length+1 : Infinity), live?live.length:Infinity), perfect = E.words.length<=bestN, noHint = E.revealed.size===0;
@@ -1288,7 +1290,7 @@ onTap($('#edSave'), ()=>{
 
 /* ---------------- Coins: config (editable), wallet, animations ---------------- */
 const COINS_DEFAULT = { start:100, level:10, perfect:10, noHint:5, daily:30, dailyPerfect:20, cityArrive:50, login:10,
-                        streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, adsPerDay:3, adCooldownMin:10, podium1:30, podium2:20, podium3:10 };
+                        streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, helpReward:20, adsPerDay:3, adCooldownMin:10, podium1:30, podium2:20, podium3:10 };
 const COIN_LABELS = { start:'START BALANCE', level:'LEVEL DONE', perfect:'PERFECT BONUS', noHint:'NO-HINT BONUS', daily:'CHALLENGE DONE', dailyPerfect:'CHALLENGE PERFECT', podium1:'🥇 PODIUM', podium2:'🥈 PODIUM', podium3:'🥉 PODIUM', cityArrive:'NEW CITY', login:'DAILY LOGIN',
                       streak3:'STREAK 3', streak7:'STREAK 7', streak14:'STREAK 14', streak30:'STREAK 30', hint:'HINT COST', hint2:'2ND HINT COST', restart:'RESTART COST', freeHintsPerDay:'FREE HINTS / DAY', hintCooldownMin:'FREE HINT WAIT (MIN)', adReward:'AD REWARD', adsPerDay:'ADS / DAY', adCooldownMin:'AD WAIT (MIN)' };
 function coinsCfgLoad(){ try{ const c=JSON.parse(localStorage.getItem('coinsCfg')||'null'); if (c) return {...COINS_DEFAULT, ...c}; }catch(e){} return {...COINS_DEFAULT}; }
@@ -1482,18 +1484,31 @@ async function checkHelped(){
   if (HELP || !W.pid || !TRACK.url) return;
   try{
     const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&helped='+encodeURIComponent(W.pid)); const j = await r.json();
-    if (!j.ok || !j.rows || !j.rows.length) return;
+    if (!j.ok || !j.rows || !j.rows.length){ checkHelperPay(); return; }
     W.helpSeen = W.helpSeen || {};
-    const fresh = j.rows.filter(x=>!W.helpSeen[x.id]); if (!fresh.length) return;
+    const fresh = j.rows.filter(x=>!W.helpSeen[x.id]); if (!fresh.length){ checkHelperPay(); return; }
     const x = fresh[0]; W.helpSeen[x.id]=1; wSave();
-    $('#solvedK').textContent = String(x.by||'A FRIEND').toUpperCase() + ' SOLVED YOUR PUZZLE';
-    $('#solvedC').textContent = x.s + ' → ' + x.t + ' · ' + x.steps + ' STEPS';
-    const path=$('#solvedPath'); path.innerHTML=''; const words=[x.s].concat(x.path||[]);
+    notice(String(x.by||'A FRIEND').toUpperCase() + ' SOLVED YOUR PUZZLE', x.s + ' → ' + x.t + ' · ' + x.steps + ' STEPS', 'THANKS! +20 🪙', ()=>{ coinsAdd(20, $('#coinPill')); track('help_thanks'); checkHelperPay(); });
+    const path=$('#solvedPath'); const words=[x.s].concat(x.path||[]);
     words.forEach((w,i)=>{ if (i){ const a=document.createElement('i'); a.textContent='↓'; path.appendChild(a); } const sp=document.createElement('span'); sp.textContent=w; if (w===x.t) sp.classList.add('t'); path.appendChild(sp); });
-    $('#solvedDlg').classList.add('show');
+    return;
+  }catch(e){ checkHelperPay(); }
+}
+let solvedOkFn=null;
+onTap($('#solvedOk'), ()=>{ $('#solvedDlg').classList.remove('show'); const f=solvedOkFn; solvedOkFn=null; if (f) f(); });
+function notice(k, c, btn, onOk){ $('#solvedK').textContent=k; $('#solvedC').textContent=c; $('#solvedPath').innerHTML=''; $('#solvedOk').textContent=btn||'OK'; solvedOkFn=onOk||null; $('#solvedDlg').classList.add('show'); }
+/* the helper: coins for help given from another browser/device (matched by nickname), paid once per help id */
+async function checkHelperPay(){
+  if (HELP || !W.name || !TRACK.url) return;
+  try{
+    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&helper='+encodeURIComponent(W.name)); const j = await r.json();
+    if (!j.ok || !j.rows) return;
+    W.helpPaid = W.helpPaid||{}; const due = j.rows.filter(x=>x.hid && !W.helpPaid[x.hid]); if (!due.length) return;
+    due.forEach(x=>{ W.helpPaid[x.hid]=1; }); wSave();
+    const total = due.length*COINS.helpReward, who = [...new Set(due.map(x=>x.who).filter(Boolean))].join(', ') || 'a friend';
+    notice('THANK YOU', 'You received '+total+' coins for helping '+who, 'COLLECT +'+total+' 🪙', ()=>{ coinsAdd(total, $('#coinPill')); track('help_paid', { extra:{ n:due.length, coins:total } }); });
   }catch(e){}
 }
-onTap($('#solvedOk'), ()=>{ $('#solvedDlg').classList.remove('show'); coinsAdd(20, $('#coinPill')); track('help_thanks'); });
 
 /* ---------------- Tutorial: a scripted ghost player types CAT → BAT → BAD → BED ---------------- */
 const UPWARD = false;   // ladder builds top-down (set true to test the bottom-up variant)
