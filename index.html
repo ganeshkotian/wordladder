@@ -31,7 +31,7 @@ header .hbtns{display:flex;gap:6px;flex-shrink:0}
 header h1{white-space:nowrap}
 @media (max-width:430px){ header .lb{display:none} #hintBtn,#restartBtn,#dailyBtn{padding:10px 12px;font-size:15px} }
 body.done #restartBtn{display:none}
-#hintBtn,#restartBtn,#dailyBtn,#helpBtn,#menuBtn{
+#hintBtn,#restartBtn,#dailyBtn,#inboxBtn,#menuBtn{
   border:0;border-radius:999px;padding:10px 12px;white-space:nowrap;font-weight:800;font-size:13px;letter-spacing:.04em;
   background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(30,35,60,.08),inset 0 0 0 1px var(--line);
   display:flex;align-items:center;gap:6px;cursor:pointer;transition:transform .12s,opacity .2s;
@@ -296,10 +296,10 @@ body.helping #nextBtn, body.helping #retryBtn, body.helping #dailyBtn, body.help
 body.helping footer.done #ownBtn{display:block}
 #solvedDlg{position:fixed;inset:0;z-index:117;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.5)}
 #solvedDlg.show{display:flex}
-#solvedDlg .card{background:#fff;border-radius:22px;padding:24px;width:min(88%,340px);text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+#solvedDlg .card{background:#fff;border-radius:22px;padding:24px;width:min(88%,340px);max-height:88vh;overflow:auto;box-sizing:border-box;text-align:center;box-shadow:0 20px 50px rgba(30,35,60,.3);animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
 #solvedDlg .k{font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--muted)} #solvedDlg .c{font-size:20px;font-weight:800;color:var(--ink);margin:8px 0 14px}
-#solvedDlg .path{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:14px}
-#solvedDlg .path span{font-weight:800;letter-spacing:.3em;font-size:18px;color:var(--ink)} #solvedDlg .path span.t{color:var(--ok)} #solvedDlg .path i{color:var(--muted);font-style:normal;font-size:12px}
+#solvedDlg .path{display:flex;flex-direction:column;gap:2px;align-items:center;margin-bottom:14px}
+#solvedDlg .path span{font-weight:800;letter-spacing:.3em;font-size:16px;color:var(--ink)} #solvedDlg .path span.t{color:var(--ok)} #solvedDlg .path i{color:var(--muted);font-style:normal;font-size:12px}
 #solvedDlg button{width:100%;border:0;border-radius:14px;background:var(--ok);color:#fff;font:inherit;font-weight:800;font-size:14px;letter-spacing:.08em;padding:14px;cursor:pointer}
 #nameDlg{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;background:rgba(31,35,51,.35)}
 #nameDlg.show{display:flex}
@@ -423,7 +423,9 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
 #tut .gotit{width:min(50%,180px);height:44px;font-size:14px;border:0;border-radius:16px;background:var(--dark);color:#fff;font-weight:800;letter-spacing:.08em;cursor:pointer;box-shadow:0 6px 18px rgba(30,35,60,.22);margin-top:28px}
 #tut .spark{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;pointer-events:none;z-index:2}
 #tut .gotit:active{transform:scale(.98)}
-#helpBtn,#menuBtn{width:38px;justify-content:center;padding:0!important;font-size:15px}
+#inboxBtn,#menuBtn{width:38px;justify-content:center;padding:0!important;font-size:15px;position:relative}
+#inboxBtn .dot{display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px #fff}
+#inboxBtn.new .dot{display:block}
 @media (prefers-reduced-motion:reduce){ #tut .cell.pop{animation:none} }
 
 </style>
@@ -431,7 +433,7 @@ body.up .cell.drop.hop{animation-name:dropUp,hop}
 <body tabindex="0">
 <header>
   <div><h1>WORD LADDER</h1><div class="level"><span id="levelLbl"></span><span class="coin" id="coinPill"><span class="ci">🪙</span><span id="coinVal">0</span></span></div></div>
-  <div class="hbtns"><button id="menuBtn" aria-label="Main menu">🏠</button><button id="helpBtn" aria-label="How to play">?</button><button id="dailyBtn" aria-label="Daily challenge">📅<span class="lb">DAILY</span></button><button id="restartBtn" aria-label="Restart level">↺<span class="lb">RESTART</span><span class="cost none" id="restartCost">10</span></button><button id="hintBtn" aria-label="Hint">💡<span class="lb">HINT</span><span class="cost" id="hintCost">25</span></button></div>
+  <div class="hbtns"><button id="menuBtn" aria-label="Main menu">🏠</button><button id="inboxBtn" aria-label="Solutions from friends">📬<span class="dot" id="inboxDot"></span></button><button id="dailyBtn" aria-label="Daily challenge">📅<span class="lb">DAILY</span></button><button id="restartBtn" aria-label="Restart level">↺<span class="lb">RESTART</span><span class="cost none" id="restartCost">10</span></button><button id="hintBtn" aria-label="Hint">💡<span class="lb">HINT</span><span class="cost" id="hintCost">25</span></button></div>
 </header>
 <div class="modes"><div class="seg"><button id="modeClassic">CLASSIC</button><button id="modeEndless" class="on">ENDLESS</button></div></div>
 <main>
@@ -1031,7 +1033,7 @@ function fixedRow(w){
 })();
 document.addEventListener('keydown', e=>{
   if (tutOpen){ if (e.key==='Enter'||e.key===' '||e.key==='Escape') closeTut(); return; }
-  if ($('#nameDlg').classList.contains('show') || $('#menu').classList.contains('show') || $('#editor').classList.contains('show') || $('#arrive').classList.contains('show') || $('#coinDlg').classList.contains('show')) return;
+  if ($('#nameDlg').classList.contains('show') || $('#menu').classList.contains('show') || $('#editor').classList.contains('show') || $('#arrive').classList.contains('show') || $('#coinDlg').classList.contains('show') || $('#solvedDlg').classList.contains('show')) return;
   if (e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
   if (/^[a-zA-Z]$/.test(e.key)) { typeLetter(e.key.toUpperCase()); e.preventDefault(); }
   else if (e.key==='Backspace') { backspace(); e.preventDefault(); }
@@ -1292,7 +1294,7 @@ onTap($('#edSave'), ()=>{
 const COINS_DEFAULT = { start:100, level:10, perfect:10, noHint:5, daily:30, dailyPerfect:20, cityArrive:50, login:10,
                         streak3:50, streak7:100, streak14:200, streak30:500, hint:25, hint2:40, restart:10, freeHintsPerDay:1, hintCooldownMin:15, adReward:50, helpReward:20, adsPerDay:3, adCooldownMin:10, podium1:30, podium2:20, podium3:10 };
 const COIN_LABELS = { start:'START BALANCE', level:'LEVEL DONE', perfect:'PERFECT BONUS', noHint:'NO-HINT BONUS', daily:'CHALLENGE DONE', dailyPerfect:'CHALLENGE PERFECT', podium1:'🥇 PODIUM', podium2:'🥈 PODIUM', podium3:'🥉 PODIUM', cityArrive:'NEW CITY', login:'DAILY LOGIN',
-                      streak3:'STREAK 3', streak7:'STREAK 7', streak14:'STREAK 14', streak30:'STREAK 30', hint:'HINT COST', hint2:'2ND HINT COST', restart:'RESTART COST', freeHintsPerDay:'FREE HINTS / DAY', hintCooldownMin:'FREE HINT WAIT (MIN)', adReward:'AD REWARD', adsPerDay:'ADS / DAY', adCooldownMin:'AD WAIT (MIN)' };
+                      streak3:'STREAK 3', streak7:'STREAK 7', streak14:'STREAK 14', streak30:'STREAK 30', hint:'HINT COST', hint2:'2ND HINT COST', restart:'RESTART COST', freeHintsPerDay:'FREE HINTS / DAY', hintCooldownMin:'FREE HINT WAIT (MIN)', adReward:'AD REWARD', helpReward:'HELP REWARD (HELPER)', adsPerDay:'ADS / DAY', adCooldownMin:'AD WAIT (MIN)' };
 function coinsCfgLoad(){ try{ const c=JSON.parse(localStorage.getItem('coinsCfg')||'null'); if (c) return {...COINS_DEFAULT, ...c}; }catch(e){} return {...COINS_DEFAULT}; }
 let COINS = coinsCfgLoad();
 function wLoad(){ try{ const w=JSON.parse(localStorage.getItem('wallet')||'null'); if (w) return w; }catch(e){} return {coins:COINS.start, freeDay:'', freeUsed:0, loginDay:'', coolUntil:0, perf:{}}; }
@@ -1432,31 +1434,57 @@ function helpLink(){
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(h)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   return location.origin + location.pathname + '?help=' + b64;
 }
-function drawHelpCard(){   // the live board as a picture: header, start word, rows so far, caption, target, HELP button
-  const cv = $('#helpCanvas'), S = 2, Wd = 360, tile = 68, gap = 12, n = L;
-  const Ht = 64 + tile + 26 + (tile+12) + 12 + 100 + tile + 30 + 30;
+function drawHelpCard(){   // the share picture: polished card in the game's look (header, start, empty row, caption pill, target, PLAY)
+  const cv = $('#helpCanvas'), S = 2, Wd = 390, n = L;
+  const tile = Math.min(64, Math.floor((Wd-60-12*(n-1))/n)), gap = 12;
+  const Ht = 74 + tile + 30 + tile + 26 + 74 + 26 + tile + 36 + 66 + 30;
   cv.width = Wd*S; cv.height = Ht*S; const c = cv.getContext('2d'); c.scale(S,S);
-  const g = c.createLinearGradient(0,0,0,Ht); g.addColorStop(0,'#eef3fb'); g.addColorStop(1,'#f7f7fb'); c.fillStyle=g; c.fillRect(0,0,Wd,Ht);
-  const font = (w,sz)=>c.font = w+' '+sz+'px -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
-  const spaced=(txt,x,y,sp)=>{ for (const ch of txt){ c.fillText(ch,x,y); x+=c.measureText(ch).width+sp; } };
-  c.fillStyle='#1f2333'; font(800,15); c.textAlign='left'; c.textBaseline='alphabetic'; spaced('WORD LADDER',16,28,2.2);
-  font(800,10); c.fillStyle='#7a8090'; spaced($('#levelLbl').textContent,16,46,1.4);
-  const roundRect=(x,y,w,h,r)=>{ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
+  const bg = c.createLinearGradient(0,0,0,Ht); bg.addColorStop(0,'#e9f0fb'); bg.addColorStop(1,'#f3f6fc'); c.fillStyle=bg; c.fillRect(0,0,Wd,Ht);
+  const font=(w,sz)=>c.font = w+' '+sz+'px -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
+  const rr=(x,y,w,h,r)=>{ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
+  const shadow=(blur,dy,col)=>{ c.shadowColor=col||'rgba(30,45,90,.18)'; c.shadowBlur=blur; c.shadowOffsetY=dy; };
+  const noShadow=()=>{ c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0; };
+  const pill=(x,y,w,h)=>{ c.save(); shadow(8,3,'rgba(30,45,90,.12)'); rr(x,y,w,h,h/2); c.fillStyle='#fff'; c.fill(); c.restore(); };
+  // ---- header: city badge + name + progress, coin pill, buttons
+  const city = (CITIES[J.city]||{}), lvlN = J.level+1, lvlT = city.levels||10, label = HELP?HELP.c:DAILY?'DAILY':(city.name||'JOURNEY');
+  pill(10,14,150,40);
+  c.save(); shadow(6,2,'rgba(30,45,90,.2)'); c.beginPath(); c.arc(32,34,17,0,Math.PI*2); const cg=c.createLinearGradient(15,17,49,51); cg.addColorStop(0,'#8fc1ff'); cg.addColorStop(1,'#3b6fd6'); c.fillStyle=cg; c.fill(); c.restore();
+  font(800,15); c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.fillText((label[0]||'W'), 32, 35);
+  font(800,13); c.fillStyle='#1b2a4a'; c.textAlign='left'; c.textBaseline='alphabetic'; c.fillText(label.slice(0,10), 56, 31);
+  font(800,9); c.fillStyle='#6b7690'; c.fillText(DAILY||HELP ? (HELP?HELP.l:dayLabel()) : (lvlN+' / '+lvlT), 56, 45);
+  if (!DAILY && !HELP){ rr(92,40,58,6,3); c.fillStyle='#dfe4ee'; c.fill(); rr(92,40,Math.max(6,58*Math.min(1,(lvlN-1)/lvlT)),6,3); c.fillStyle='#43c463'; c.fill(); }
+  pill(166,14,60,40); c.beginPath(); c.arc(184,34,10,0,Math.PI*2); c.fillStyle='#f5b400'; c.fill(); c.beginPath(); c.arc(184,34,6,0,Math.PI*2); c.fillStyle='#ffd84d'; c.fill();
+  font(800,13); c.fillStyle='#1b2a4a'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(String(W.coins), 199, 35);
+  // right buttons (decorative): home, ?, restart, hint
+  const btns=[['🏠',36],['?',36],['↻',36],['💡',36]]; let bx=Wd-10; for (let i=btns.length-1;i>=0;i--){ const [t,w]=btns[i]; bx-=w; pill(bx,16,w,36); font(800,13); c.fillStyle='#1b2a4a'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t, bx+w/2, 35); if (i===3){ rr(bx+w-26,40,28,13,6.5); c.fillStyle='#2ebd6b'; c.fill(); font(800,7); c.fillStyle='#fff'; c.fillText('FREE', bx+w-12, 47); } bx-=6; }
+  // ---- tiles
   const tiles=(word, y, style)=>{ const tw=n*tile+(n-1)*gap, x0=(Wd-tw)/2; for (let i=0;i<n;i++){ const x=x0+i*(tile+gap); const st = typeof style==='function'? style(i) : style;
-      c.save(); if (st==='dark'||st==='grey'||st==='hit'){ c.shadowColor='rgba(30,35,60,.25)'; c.shadowBlur=10; c.shadowOffsetY=4; }
-      roundRect(x,y,tile,tile,14);
-      c.fillStyle = st==='dark'?'#2b2f3d': st==='grey'?'#595e6b': st==='hit'?'#2ebd6b': st==='bad'?'#fff3f3': '#fff'; c.fill(); c.restore();
-      if (st==='empty'||st==='cursor'||st==='bad'||st==='ok'||st==='changed'){ c.lineWidth=2; c.strokeStyle = st==='cursor'?'#9fb0ff': st==='bad'?'#e5484d': st==='changed'?'#4f6bff': st==='ok'?'#d9dde8':'#e9d8a8'; roundRect(x+1,y+1,tile-2,tile-2,13); c.stroke(); }
-      if (st==='cursor'){ c.fillStyle='#4f6bff'; c.fillRect(x+tile/2-1, y+18, 2, tile-36); }
-      if (word && word[i] && st!=='empty' && st!=='cursor'){ c.fillStyle = (st==='dark'||st==='grey'||st==='hit')?'#fff': st==='bad'?'#e5484d': st==='changed'?'#4f6bff':'#1f2333'; font(800,34); c.textAlign='center'; c.textBaseline='middle'; c.fillText(word[i], x+tile/2, y+tile/2+2); }
+      c.save();
+      if (st==='dark'||st==='grey'){ shadow(10,5,'rgba(20,30,60,.28)'); rr(x,y,tile,tile,14); const g=c.createLinearGradient(0,y,0,y+tile); if (st==='dark'){ g.addColorStop(0,'#2a3a5e'); g.addColorStop(1,'#172443'); } else { g.addColorStop(0,'#6b6f78'); g.addColorStop(1,'#4b4f58'); } c.fillStyle=g; c.fill(); c.restore();
+        rr(x+2,y+2,tile-4,tile*0.42,12); c.fillStyle='rgba(255,255,255,.07)'; c.fill();
+        font(800, Math.round(tile*0.56)); c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(word[i], x+tile/2, y+tile/2+2); }
+      else { shadow(8,3,'rgba(30,45,90,.10)'); rr(x,y,tile,tile,14); c.fillStyle = st==='cursor' ? '#f7fbff' : '#fff8ef'; c.fill(); c.restore();
+        c.lineWidth=3; c.strokeStyle = st==='cursor' ? '#4fb3ff' : '#f2c84b'; rr(x+1.5,y+1.5,tile-3,tile-3,13); c.stroke();
+        if (st==='cursor'){ rr(x+tile/2-1.5, y+tile*0.28, 3, tile*0.44, 1.5); c.fillStyle='#3b6ff0'; c.fill(); } }
     } return y+tile; };
-  let y=64; y=tiles(P.s, y, 'dark');
-  c.fillStyle='#b9bec9'; font(700,16); c.textAlign='center'; c.textBaseline='middle'; c.fillText('↓', Wd/2, y+14); y+=26;
-  y=tiles(null, y, k=>k===0?'cursor':'empty'); y+=12;
-  c.fillStyle='#8a8f9c'; font(800,33); c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText('CHANGE 1 LETTER', Wd/2, y+48);
-  c.fillStyle='#9a9fac'; font(800,27); c.fillText('REACH THE TARGET', Wd/2, y+86); y+=100;
-  y=tiles(P.t, y, 'grey'); y+=30;
-  c.fillStyle='#7a8090'; font(800,11); c.textAlign='center'; c.textBaseline='middle'; { const t=(W.name||'A FRIEND').toUpperCase()+' NEEDS HELP · TAP THE LINK', sp=1.6; let w=0; for (const ch of t) w+=c.measureText(ch).width+sp; c.textAlign='left'; spaced(t,(Wd-w)/2,y+10,sp); }
+  let y=74; y=tiles(P.s, y, 'dark');
+  c.fillStyle='#9cc4ff'; font(800,16); c.textAlign='center'; c.textBaseline='middle'; c.fillText('⌄', Wd/2, y+12); y+=30;
+  y=tiles(null, y, k=>k===0?'cursor':'empty'); y+=26;
+  // ---- caption pill
+  c.save(); shadow(10,4,'rgba(30,45,90,.12)'); rr(28,y,Wd-56,74,20); c.fillStyle='rgba(255,255,255,.85)'; c.fill(); c.restore();
+  font(800,27); c.textBaseline='alphabetic'; const p1='CHANGE ', p2='1', p3=' LETTER'; const w1=c.measureText(p1).width, w2=c.measureText(p2).width, w3=c.measureText(p3).width; let tx=(Wd-(w1+w2+w3))/2; c.textAlign='left';
+  c.fillStyle='#1b2a4a'; c.fillText(p1,tx,y+34); tx+=w1; c.fillStyle='#2f7cf6'; c.fillText(p2,tx,y+34); tx+=w2; c.fillStyle='#1b2a4a'; c.fillText(p3,tx,y+34);
+  font(800,16); c.fillStyle='#7a8699'; c.textAlign='center'; c.fillText('REACH THE TARGET', Wd/2, y+58); y+=74+26;
+  y=tiles(P.t, y, 'grey'); y+=36;
+  // ---- PLAY button (glossy green)
+  const bw=200, bh=66, bx0=(Wd-bw)/2;
+  c.save(); shadow(14,6,'rgba(40,160,70,.35)'); rr(bx0,y+6,bw,bh,22); c.fillStyle='#1f9a3a'; c.fill(); c.restore();   // dark lower edge
+  rr(bx0,y,bw,bh,22); const gg=c.createLinearGradient(0,y,0,y+bh); gg.addColorStop(0,'#6fe36b'); gg.addColorStop(0.5,'#36c93f'); gg.addColorStop(1,'#22b035'); c.fillStyle=gg; c.fill();
+  rr(bx0+6,y+5,bw-12,bh*0.38,14); c.fillStyle='rgba(255,255,255,.22)'; c.fill();
+  c.fillStyle='#fff'; c.beginPath(); c.moveTo(bx0+44,y+bh/2-14); c.lineTo(bx0+68,y+bh/2); c.lineTo(bx0+44,y+bh/2+14); c.closePath(); c.fill();
+  font(900,30); c.textAlign='left'; c.textBaseline='middle'; c.fillText('PLAY', bx0+84, y+bh/2+1);
+  // footer line
+  font(800,9); c.fillStyle='#7a8699'; c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText((W.name||'A FRIEND').toUpperCase()+' NEEDS HELP · TAP THE LINK', Wd/2, y+bh+24);
 }
 function helpCardFile(){   // synchronous: toDataURL (not toBlob) so the share sheet can open inside the same tap
   drawHelpCard();
@@ -1487,12 +1515,27 @@ async function checkHelped(){
     if (!j.ok || !j.rows || !j.rows.length){ checkHelperPay(); return; }
     W.helpSeen = W.helpSeen || {};
     const fresh = j.rows.filter(x=>!W.helpSeen[x.id]); if (!fresh.length){ checkHelperPay(); return; }
+    $('#inboxBtn').classList.add('new');
     const x = fresh[0]; W.helpSeen[x.id]=1; wSave();
-    notice(String(x.by||'A FRIEND').toUpperCase() + ' SOLVED YOUR PUZZLE', x.s + ' → ' + x.t + ' · ' + x.steps + ' STEPS', 'THANKS! +20 🪙', ()=>{ coinsAdd(20, $('#coinPill')); track('help_thanks'); checkHelperPay(); });
-    const path=$('#solvedPath'); const words=[x.s].concat(x.path||[]);
-    words.forEach((w,i)=>{ if (i){ const a=document.createElement('i'); a.textContent='↓'; path.appendChild(a); } const sp=document.createElement('span'); sp.textContent=w; if (w===x.t) sp.classList.add('t'); path.appendChild(sp); });
+    showSolution(x, true); $('#inboxBtn').classList.remove('new');
     return;
   }catch(e){ checkHelperPay(); }
+}
+let INBOX=[];
+function showSolution(x, thank){   // a friend's solution; the first time it carries the THANKS coins
+  notice(String(x.by||'A FRIEND').toUpperCase() + ' SOLVED YOUR PUZZLE', x.s + ' → ' + x.t + ' · ' + x.steps + ' STEPS', thank ? 'THANKS! +20 🪙' : 'OK', thank ? ()=>{ coinsAdd(20, $('#coinPill')); track('help_thanks'); checkHelperPay(); } : null);
+  const path=$('#solvedPath'); const words=[x.s].concat(x.path||[]);
+  words.forEach((w,i)=>{ if (i){ const a=document.createElement('i'); a.textContent='↓'; path.appendChild(a); } const sp=document.createElement('span'); sp.textContent=w; if (w===x.t) sp.classList.add('t'); path.appendChild(sp); });
+}
+async function openInbox(){   // 📬: the latest solution a friend sent back (fetched now, so it never depends on the launch check)
+  closeMenu(); notice('SOLUTIONS FROM FRIENDS', 'Checking…', 'CLOSE');
+  try{
+    const r = await fetch(TRACK.url+'?key='+encodeURIComponent(TRACK.key)+'&helped='+encodeURIComponent(W.pid)+'&_='+Date.now()); const j = await r.json();
+    INBOX = (j.ok && j.rows) ? j.rows : [];
+    if (!INBOX.length){ notice('SOLUTIONS FROM FRIENDS', 'No solutions yet. Tap HELP on a level to ask a friend.', 'OK'); return; }
+    const x = INBOX[0]; W.helpSeen = W.helpSeen||{}; const fresh = !W.helpSeen[x.id]; W.helpSeen[x.id]=1; wSave(); $('#inboxBtn').classList.remove('new');
+    showSolution(x, fresh);
+  }catch(e){ notice('SOLUTIONS FROM FRIENDS', 'Could not reach the server — try again in a moment.', 'OK'); }
 }
 let solvedOkFn=null;
 onTap($('#solvedOk'), ()=>{ $('#solvedDlg').classList.remove('show'); const f=solvedOkFn; solvedOkFn=null; if (f) f(); });
@@ -1594,7 +1637,7 @@ function sparkle(row){   // small particle burst around a row (Web Animations, n
 function openTut(){ tutOpen=true; $('#tut').classList.add('show'); tutPlay(); }
 function closeTut(){ tutOpen=false; tutRun++; $('#tut').classList.remove('show'); try{ localStorage.setItem('tutSeen','1'); }catch(e){} document.body.focus(); askName(); }
 onTap($('#gotIt'), closeTut);
-onTap($('#helpBtn'), openTut);
+onTap($('#inboxBtn'), openInbox);
 
 TRACK.on=false; loadPuzzle(); TRACK.on=true;   // the board preloaded behind the menu is not a level start
 let tutSeen=false; try{ tutSeen=localStorage.getItem('tutSeen')==='1'; }catch(e){}
